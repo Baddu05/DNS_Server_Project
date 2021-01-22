@@ -1,0 +1,1007 @@
+        -:    0:Source:../src/dns_client_funcs.c
+        -:    0:Graph:dns_client_funcs.gcno
+        -:    0:Data:dns_client_funcs.gcda
+        -:    0:Runs:22
+        -:    0:Programs:1
+        -:    1:/**********************************************************************************************************************************************
+        -:    2:*
+        -:    3:*	FILE NAME 		: dns_client_funcs.c
+        -:    4:*	
+        -:    5:*	FILE DESCRIPTION	: contains all the functions needed by the client.
+        -:    6:*
+        -:    7:*
+        -:    8:***********************************************************************************************************************************************/
+        -:    9:
+        -:   10:/**********************************************************************************************************************************************
+        -:   11:*	INCLUDING HEADER FILES
+        -:   12:*
+        -:   13:**********************************************************************************************************************************************/
+        -:   14:
+        -:   15:#include "header.h"
+        -:   16:#include "authenticate.h"
+        -:   17:#include "message.h"
+        -:   18:#include "resource.h"
+        -:   19:#include "logger.h"
+        -:   20:
+        -:   21:/***********************************************************************************************************************************************
+        -:   22:*
+        -:   23:* 	Function name: Update
+        -:   24:*
+        -:   25:* 	Description:  function to add or delete record in resource record file
+        -:   26:*
+        -:   27:* 	Return: nothing
+        -:   28:*
+        -:   29:***********************************************************************************************************************************************/
+        -:   30:
+        6:   31:void Update(
+        -:   32:		int sd, 				//socket descriptor
+        -:   33:		struct sockaddr_in *nameserver, 	//socket structure type
+        -:   34:		int update_option,			//update option for addition of records
+        -:   35:		char *domain_name,			//host name 
+        -:   36:		char *ip				//ip address
+        -:   37:	)
+        -:   38:
+        -:   39:{
+        -:   40:	
+        6:   41:	LOGGER(LOG_CRITICAL,"Entering function:UPDATE\n");
+        -:   42:
+        -:   43:	char buffer[MAX];
+        -:   44:
+        6:   45:	int	msg_length	= 0,
+        6:   46:		send_ret	= 0,
+        6:   47:		recv_ret	= 0;
+        -:   48:
+        -:   49:	socklen_t addrlen;
+        -:   50:
+        6:   51:	struct DNS_HEADER *head = NULL;
+        -:   52:
+        -:   53:
+        -:   54:
+        6:   55:	msg_length = create_update_message(buffer,update_option,domain_name,ip);
+        -:   56:	
+        -:   57:	TRACE(DETAILED_TRACE,("sending message length %d\n",msg_length));
+        -:   58:
+        -:   59:	/*sending update information to name server*/
+        6:   60:	send_ret = sendto(sd,(char *)buffer,msg_length,0,(struct sockaddr *)nameserver,sizeof(*nameserver));
+        -:   61:	
+        6:   62:	if(0 > send_ret)
+        -:   63:	{	
+    #####:   64:		ERROR(ERROR_MAJOR,"Error in sending to client\n");
+    #####:   65:		LOGGER(LOG_CRITICAL,"Exiting function: Authenticate for server...\n");
+    #####:   66:		return;
+        -:   67:	}
+        -:   68:	/*receiving update status from name server*/
+        6:   69:	recv_ret = recvfrom(sd,(char *)buffer,sizeof(buffer),0,(struct sockaddr *)nameserver,&addrlen);
+        -:   70:
+        6:   71:	if(0 > recv_ret)
+        -:   72:	{
+    #####:   73:		ERROR(ERROR_MAJOR,"Error in recieveing message\n");
+    #####:   74:		LOGGER(LOG_CRITICAL,"Exiting function: Authenticate for server...\n");
+    #####:   75:		return;
+        -:   76:	}
+        -:   77:	/* reading header sent from server */
+        -:   78:
+        6:   79:	head = (struct DNS_HEADER *)&buffer;
+        -:   80:
+        6:   81:	if(0 == head->rcode)/*on successfull updation*/
+        -:   82:	{
+        6:   83:		LOGGER(LOG_CRITICAL,"UPDATE SUCCESSFULL\n" );
+        6:   84:		printf("UPDATE SUCCESSFULL\n");
+        6:   85:		update_local_cache("hosts",update_option,domain_name,ip);
+        -:   86:		
+        -:   87:	}
+        -:   88:	else/*on failure to update*/
+        -:   89:	{
+    #####:   90:		printf("UPDATE UNSUCCESSFULL\n");
+    #####:   91:		LOGGER(LOG_CRITICAL,"UPDATE UNSUCCESSFULL\n");
+        -:   92:	}
+        -:   93:	
+        6:   94:	LOGGER(LOG_CRITICAL,"Exiting function:UPDATE\n");
+        -:   95:}//end update
+        -:   96:
+        -:   97:/***********************************************************************************************************************************************
+        -:   98:*
+        -:   99:* 	Function name: create_update_message
+        -:  100:*
+        -:  101:* 	Description:  function creates a DNS message to update the header fields according to DNS Header format
+        -:  102:*
+        -:  103:* 	Return: message length
+        -:  104:*
+        -:  105:***********************************************************************************************************************************************/
+        -:  106:
+        6:  107:int create_update_message(
+        -:  108:				char *buffer,			//to contain packet
+        -:  109:				int update_option,		//option for addition or deletion
+        -:  110:				char *domain_name,		// host name
+        -:  111:				char *ip			//ip address
+        -:  112:			)
+        -:  113:
+        -:  114:{
+        -:  115:
+        6:  116:	LOGGER(LOG_CRITICAL,"Entering function:CREATE_UPDATE_MESSAGE\n");
+        -:  117:
+        6:  118:	struct DNS_HEADER *header	= NULL;
+        6:  119:	struct RES_RECORD *update_record = NULL;
+        -:  120:
+        6:  121:	int msg_length = 0;
+        -:  122:
+        -:  123:	/*initialising header fields according to DNS Header format*/
+        6:  124:	header = (struct DNS_HEADER *)buffer;
+        6:  125:	header->id = (unsigned short)htons(getpid());
+        6:  126:	header->qr = 0;// query
+        6:  127:	header->opcode = 5;//update
+        6:  128:	header->z = (unsigned char)update_option;// add record
+        6:  129:	header->aa = 0;
+        6:  130:	header->tc = 1;
+        6:  131:	header->rd = 1;
+        6:  132:	header->ra = 0;
+        6:  133:	header->ad = 0;
+        6:  134:	header->cd = 1;
+        6:  135:	header->rcode = 0;//response code to success
+        6:  136:	header->q_count = htons(1);
+        6:  137:	header->ans_count = 0;// answer count
+        6:  138:	header->auth_count = 0;
+        6:  139:	header->add_count = 0;
+        -:  140:	
+        -:  141:	/*initialising Update record*/
+        6:  142:	update_record = (struct RES_RECORD *)&buffer[sizeof(struct DNS_HEADER)];
+        6:  143:	strncpy((char *)update_record->name,domain_name,strlen(domain_name) + 1);
+        6:  144:	strncpy((char *)update_record->rdata,ip,strlen(ip)+1);
+        -:  145:	
+        -:  146:	TRACE(BRIEF_TRACE,("%s %s updating\n",update_record->name,update_record->rdata));
+        -:  147:
+        -:  148:
+        6:  149:	update_record->resource.type = 1;
+        6:  150:	update_record->resource.data_len = strlen(ip);
+        6:  151:	update_record->resource._class = 1;
+        6:  152:	update_record->resource.ttl = 0;
+        -:  153:
+        6:  154:	msg_length = sizeof(struct DNS_HEADER) + sizeof(struct RES_RECORD);
+        -:  155:	
+        -:  156:	TRACE(DETAILED_TRACE, ("update message length %d\n",msg_length));
+        -:  157:
+        6:  158:	LOGGER(LOG_CRITICAL,"Exiting function:CREATE_UPDATE_MESSAGE\n");
+        6:  159:	return msg_length;
+        -:  160:}
+        -:  161:
+        -:  162:/***********************************************************************************************************************************************
+        -:  163:*
+        -:  164:* Function name: update_local_cache
+        -:  165:*
+        -:  166:* Description:  function updates the local cache on successful updation on of resource record file
+        -:  167:*
+        -:  168:* Return: nothing
+        -:  169:*
+        -:  170:***********************************************************************************************************************************************/
+        -:  171:
+        6:  172:void update_local_cache(
+        -:  173:			char *filename,		//file_name of local cache
+        -:  174:			int update_option,	//option for addition or deletion
+        -:  175:			char *domain_name,	// host
+        -:  176:			char *ip		// ip address
+        -:  177:			)
+        -:  178:
+        -:  179:{
+        -:  180:	
+        6:  181:	LOGGER(LOG_CRITICAL,"exiting function:UPDATE_LOCAL_CACHE\n");
+        -:  182:
+        -:  183:	FILE *fp;
+        -:  184:
+        -:  185:	char	file_buf[MAX],
+        -:  186:		file_host[HOST_SIZE],
+        -:  187:		file_ip[IP_SIZE];
+        -:  188:
+        6:  189:	char *ret = NULL;
+        -:  190:
+        6:  191:	int flag = 0;
+        -:  192:
+        -:  193:
+        -:  194:	/*opening cache file*/
+        6:  195:	fp = fopen(filename,"r+");
+        6:  196:	if(NULL == fp)
+        -:  197:	{
+    #####:  198:		fp = fopen(filename,"w+");
+    #####:  199:		if(NULL == fp)
+        -:  200:		{
+    #####:  201:			ERROR(ERROR_MAJOR, "error opening file\n");
+    #####:  202:			LOGGER(LOG_CRITICAL, "exiting function:update_local_cache\n");
+    #####:  203:			return;
+        -:  204:		}
+        -:  205:	}
+        -:  206:	while(1)
+        -:  207:	{
+      139:  208:		memset(file_buf,0,MAX);
+      139:  209:		memset(file_host,0,HOST_SIZE);
+      139:  210:		memset(file_ip,0,IP_SIZE);
+      139:  211:		ret = fgets(file_buf,MAX-1,fp);
+      139:  212:		if(NULL == ret)
+        -:  213:		{
+        5:  214:			if(ADD == update_option && 0 == flag)/*adding record to local cache provided its not already present in the */
+        -:  215:			{
+        3:  216:				fprintf(fp,"%s\t%s\t\tA\tIN\n",ip,domain_name);	
+        -:  217:			}
+        -:  218:
+        5:  219:			fclose(fp);/*closing cache file*/
+        -:  220:
+        5:  221:			LOGGER(LOG_CRITICAL,"Exiting function:UPDATE_LOCAL_CACHE\n");
+        5:  222:			return;
+        -:  223:		}
+      134:  224:		sscanf(file_buf,"%s\t%s",file_ip,file_host);
+        -:  225:
+        -:  226:		/*searching local cache for domain name/IP*/
+      134:  227:		if((0 == strncmp(domain_name,file_host,strlen(domain_name)+1)) && (0 == strncmp(ip,file_ip,strlen(ip)+1)))
+        -:  228:		{
+        2:  229:			flag = 1;/*if record found*/
+        2:  230:			if(DELETE == update_option)
+        -:  231:			{
+        1:  232:				fseek(fp,-(strlen(file_buf)),SEEK_CUR);
+        1:  233:				fprintf(fp,"#");/*beginning of the record marked with # to signify that record is deleted*/
+        1:  234:				fclose(fp);/*closing cache file*/
+        -:  235:
+        1:  236:				LOGGER(LOG_CRITICAL,"Exiting function:UPDATE_LOCAL_CACHE\n");
+        1:  237:				return;
+        -:  238:			}
+        -:  239:		}
+      133:  240:	}
+        -:  241:	LOGGER(LOG_CRITICAL,"Exiting function:UPDATE_LOCAL_CACHE\n");
+        -:  242:	return;
+        -:  243:}
+        -:  244:
+        -:  245:
+        -:  246:/**********************************************************************************************************************************************
+        -:  247:*
+        -:  248:* 	Function name: remove_prefix
+        -:  249:*
+        -:  250:* 	Description:  function to preprocess the input 
+        -:  251:*		      ex:http://wwww.google.com will be preprocessed as www.google.com
+        -:  252:* 	Return: pointer to the preprocessed string
+        -:  253:*
+        -:  254:***********************************************************************************************************************************************/
+        -:  255:
+        3:  256:char *remove_prefix(
+        -:  257:		    char *input	// domain name as input from command line
+        -:  258:		   )
+        -:  259:
+        -:  260:{
+        -:  261:
+        -:  262:	
+        3:  263:	LOGGER(LOG_CRITICAL,"Entering function:REMOVE_PREFIX\n");
+        -:  264:
+        3:  265:	char	*domain	= NULL,
+        3:  266:		*token	= NULL;
+        -:  267:
+        3:  268:	token = strtok(input,"/");/*tokenizing the input domain name for preprocessing*/
+        3:  269:	token = strtok(NULL,"/");
+        3:  270:	if(NULL != token)
+        -:  271:	{
+    #####:  272:		domain = malloc((strlen(token) + 2) * sizeof(char));
+    #####:  273:		if (NULL == domain)
+        -:  274:		{
+    #####:  275:			printf("\nMalloc Failed\n");
+    #####:  276:			exit(FAILURE);
+        -:  277:		}
+    #####:  278:		strcpy((char *)domain,token);	
+        -:  279:		strcat(domain,"\0");
+        -:  280:	}/*end if*/
+        -:  281:	else
+        -:  282:	{
+        3:  283:		domain = malloc((strlen(input) + 2) * sizeof(char));/*allocating memory to store the preprocessed string*/
+        3:  284:		strcpy((char *)domain,input);	
+        -:  285:	}/*end if*/
+        -:  286:
+        -:  287:	TRACE(DETAILED_TRACE,("Prefix removed %s\n",domain));
+        3:  288:	LOGGER(LOG_CRITICAL,"Exiting function:REMOVE_PREFIX\n");
+        3:  289:	return domain;
+        -:  290:}	
+        -:  291:
+        -:  292:
+        -:  293:/**********************************************************************************************************************************************
+        -:  294:*
+        -:  295:* 	Function name: Dns_Query
+        -:  296:*
+        -:  297:* 	Description:  Searches for domain name or IP in local cache,if present prints corresponding IP/domain name, else sends 
+        -:  298:*		the query to nameserver and displays the response on the console
+        -:  299:
+        -:  300:*	Return: nothing
+        -:  301:*
+        -:  302:**********************************************************************************************************************************************/
+        -:  303:
+        7:  304:void Dns_Query(int sd,				/*socket descriptor*/
+        -:  305:	       struct sockaddr_in *nameserver,	//socket  structure type
+        -:  306:	       char *query,			// ip or domain name
+        -:  307:	       int option			// 1 for ip or 2 for domain 
+        -:  308:	      )
+        -:  309:
+        -:  310:{
+        -:  311:
+        -:  312:	
+        7:  313:	LOGGER(LOG_CRITICAL,"Entering function:DNS_QUERY\n");
+        -:  314:
+        7:  315:	char *response = NULL;
+        -:  316:
+        7:  317:	int	send_ret	= 0,
+        7:  318:		recv_ret	= 0,
+        7:  319:		msg_length	= 0;
+        -:  320:
+        7:  321:	socklen_t len = 0;
+        -:  322:
+        7:  323:	char buffer[MAX] = {'\0'};
+        -:  324:
+        7:  325:	response = search_local_cache("hosts",query,option);	/*calling function to search in local cache*/
+        7:  326:	if(NULL != response)/*response will not be NULL when resource record is found in local cache*/
+        -:  327:	{
+        2:  328:		printf("Found in local cache\n");
+        2:  329:		switch(option)
+        -:  330:		{
+        -:  331:			case IP:/*for query*/
+        -:  332:				{	
+        1:  333:					printf("DOMAIN NAME: %s\n",query);
+        1:  334:					printf("IP Address: %s\n",response);
+        1:  335:					free(response);
+        -:  336:				}
+        1:  337:				break;
+        -:  338:			case DOMAIN:/*for inverse query*/
+        -:  339:				{
+        1:  340:					printf("IP Address: %s\n",query);
+        1:  341:					printf("DOMAIN NAME: %s\n",response);
+        1:  342:					free(response);
+        -:  343:				}		
+        -:  344:				break;
+        -:  345:		}
+        2:  346:		 LOGGER(LOG_CRITICAL,"Exiting function:DNS_QUERY\n");	
+        2:  347:		return;
+        -:  348:	}
+        -:  349:	
+        5:  350:	switch(option)
+        -:  351:	{
+        -:  352:		case IP:/*for query*/
+        2:  353:			msg_length = create_message(buffer,query, T_A);
+        2:  354:			break;
+        -:  355:		case DOMAIN:/*for inverse query*/
+        -:  356:		
+        3:  357:				msg_length = create_message(buffer,query,T_PTR);
+        -:  358:		
+        -:  359:			break;
+        -:  360:	}
+        -:  361:	/*sending query to name server*/
+        5:  362:	send_ret = sendto(sd, (char *)buffer, msg_length,0, (struct sockaddr *)nameserver, sizeof(struct sockaddr));
+        5:  363:	if((msg_length != send_ret) || (0 > send_ret))
+        -:  364:	{
+    #####:  365:		ERROR(ERROR_MAJOR,"failed to send message t server\n");
+    #####:  366:		LOGGER(LOG_CRITICAL,"Exiting function:DNS_QUERY\n");
+    #####:  367:		return;
+        -:  368:	}
+        5:  369:	memset(buffer, 0, MAX);
+        -:  370:	
+        5:  371:	len = sizeof(*nameserver);
+        -:  372:	/*receiving response from name server*/
+        5:  373:	recv_ret = recvfrom(sd,(char *)buffer, MAX, 0, (struct sockaddr *)nameserver, &len);
+        5:  374:	if(0 > recv_ret)/*on failure to receive from server*/
+        -:  375:	{
+        -:  376:		
+    #####:  377:		ERROR(ERROR_MAJOR,"failed to receive from server\n");
+        -:  378:		 
+        -:  379:	}
+        -:  380:	else/*on successfully receiving from server*/
+        -:  381:	{
+        5:  382:		printf("received from server\n");
+        -:  383:	}
+        5:  384:	 save_and_display(buffer,msg_length,"hosts");
+        5:  385:	 free(response);
+        5:  386: 	LOGGER(LOG_CRITICAL,"Exiting function:DNS_QUERY\n");
+        -:  387:}
+        -:  388:
+        -:  389:
+        -:  390:/**********************************************************************************************************************************************
+        -:  391:*
+        -:  392:* 	Function name: search_local_cache
+        -:  393:*
+        -:  394:* 	Description:  searches for the domain name/IP in the local cache
+        -:  395:*
+        -:  396:* 	Return: pointer to string containing corresponding IP/domain name if present else returns NULL
+        -:  397:*
+        -:  398:***********************************************************************************************************************************************/
+        -:  399:
+        7:  400:char *search_local_cache(
+        -:  401:			char *file,	// local cache file name
+        -:  402:			char *query,	// ip or domain name
+        -:  403:			int option	// 1 for ip or 2 for domain name
+        -:  404:			)
+        -:  405:
+        -:  406:{
+        -:  407:
+        7:  408:	LOGGER(LOG_CRITICAL,"entering SEARCH_LOCAL_CACHE function\n");
+        -:  409:
+        7:  410:	FILE *fp = NULL;
+        -:  411:
+        7:  412:	char	file_buf[MAX]		= {'\0'},	
+        7:  413:		file_host[HOST_SIZE]	={'\0'},
+        7:  414:		file_ip[IP_SIZE]	={'\0'};
+        -:  415:
+        7:  416:	char	*response	= NULL,
+        7:  417:		*ret 		= NULL;
+        -:  418:
+        7:  419:	fp = fopen(file,"r");
+        7:  420:	if(NULL == fp)
+        -:  421:	{
+        1:  422:		ERROR(ERROR_MINOR,"memory allocation failed\n");
+        1:  423:		LOGGER(LOG_CRITICAL,"exiting SEARCH_LOCAL_CACHE function\n");
+        1:  424:		return NULL;
+        -:  425:	}
+        -:  426:
+        -:  427:
+        -:  428:	while(1)
+        -:  429:	{
+        -:  430:		
+       94:  431:		memset((char *)file_buf,0,MAX);
+       94:  432:		ret = fgets((char *)file_buf,MAX-1,fp);
+        -:  433:
+       94:  434:		if (NULL == ret)
+        -:  435:		{
+        4:  436:			fclose(fp);
+        4:  437:			LOGGER(LOG_CRITICAL,"exiting SEARCH_LOCAL_CACHE function\n");
+        4:  438:			return NULL;
+        -:  439:		}
+        -:  440:
+       90:  441:		file_buf[strlen((char *)file_buf)-1] = '\0';
+        -:  442:		TRACE(DETAILED_TRACE,("Record retrieved: %s\n",file_buf));
+        -:  443:			
+       90:  444:		if ('#'	!= file_buf[0])/*if a record is deleted starting of the record is marked with #*/
+        -:  445:		{
+        -:  446:			
+       54:  447:			memset(file_ip,0,IP_SIZE);
+       54:  448:			memset(file_host,0,HOST_SIZE);
+        -:  449:
+       54:  450:			sscanf((char *)file_buf,"%s\t%s",(char *)file_ip,(char *)file_host);
+        -:  451:			
+       54:  452:			switch(option)
+        -:  453:			{
+        -:  454:			
+       14:  455:				case IP:if (0 == strncmp((char *)file_host,(char *)query,strlen((char *)query)+1))
+        -:  456:					{	
+        1:  457:						response = malloc( (strlen((char *)file_ip)+1) * sizeof(char));
+        1:  458:						if (NULL == response)
+        -:  459:						{
+    #####:  460:							printf("\nMalloc Failed\n");
+    #####:  461:							exit(FAILURE);
+        -:  462:						}
+        1:  463:						strncpy((char *)response,(char *)file_ip,strlen((char *)file_ip)+1);
+        1:  464:						fclose(fp);
+        1:  465:						LOGGER(LOG_CRITICAL,"exiting SEARCH_LOCAL_CACHE function\n");
+        1:  466:						return response;
+        -:  467:					}
+       13:  468:					break;
+       40:  469:				case DOMAIN:if (0 == strncmp((char *)file_ip,(char *)query,strlen((char *)query)+1))
+        -:  470:					{	
+        1:  471:						response = malloc( (strlen((char *)file_host)+1) * sizeof(char));
+        1:  472:						if (NULL == response)
+        -:  473:						{
+    #####:  474:							printf("\nMalloc Failed\n");
+    #####:  475:							exit(FAILURE);
+        -:  476:						}
+        -:  477:						
+        1:  478:						strncpy((char *)response,(char *)file_host,strlen((char *)file_host)+1);
+        1:  479:						fclose(fp);
+        1:  480:						LOGGER(LOG_CRITICAL,"exiting SEARCH_LOCAL_CACHE function\n");
+        1:  481:						return response;
+        -:  482:					}
+        -:  483:					break;
+        -:  484:			}
+        -:  485:		}
+       88:  486:	}
+        -:  487:}
+        -:  488:
+        -:  489:
+        -:  490:/**********************************************************************************************************************************************
+        -:  491:*
+        -:  492:* Function name: HostToDns
+        -:  493:*
+        -:  494:* Description:  converts host format of domain name to dns format
+        -:  495:*		ex:www.google.com -> 3www6google3com0
+        -:  496:* Return: pointer to formatted string
+        -:  497:*
+        -:  498:***********************************************************************************************************************************************/
+        -:  499:	
+        2:  500:char *HostToDns(
+        -:  501:		char *domain_name 	//domain name
+        -:  502:		)
+        -:  503:
+        -:  504:{
+        -:  505:		
+        2:  506:	LOGGER(LOG_CRITICAL,"entering function: HOST TO DNS\n");
+        -:  507:
+        -:  508:	char *token;
+        2:  509:	char *dns = NULL;
+        2:  510:	int len = 0;
+        -:  511:	char ch[3];
+        -:  512:
+        2:  513:	len = HOST_SIZE ; //starting and ending two length characters(ex: www.google.com -> 3www6google3com0)
+        -:  514:	
+        2:  515:	dns = malloc((len) * sizeof(char));
+        2:  516:	if (NULL == dns)
+        -:  517:	{
+    #####:  518:		printf("\nMalloc failed\n");
+    #####:  519:		exit(FAILURE);
+        -:  520:	}
+        2:  521:	strcpy((char *)dns,"");
+        -:  522:
+        2:  523:	if(NULL == dns)/*error checking for malloc*/
+        -:  524:	{
+        -:  525:		
+    #####:  526:		ERROR(ERROR_CRITICAL,"memory allocation failed\n");
+    #####:  527:		LOGGER(LOG_CRITICAL,"exiting HOST TO DNS function\n");
+        -:  528:	}
+        -:  529:	
+        -:  530:	strcat((char *)dns,"");
+        2:  531:	token = strtok((char *)domain_name,".");
+        -:  532:
+       10:  533:	while(NULL != token)
+        -:  534:	{
+        6:  535:		sprintf(ch,"%d",(int)strlen(token));
+        6:  536:		strcat((char *)dns,ch);
+        6:  537:		strncat((char *)dns,token,strlen(token));
+        6:  538:		token = strtok(NULL,".");
+        -:  539:	}
+        2:  540:	strcat((char *)dns,"0");
+        2:  541:	LOGGER(LOG_CRITICAL,"exiting HOST TO DNS function\n");
+        2:  542:	return dns;
+        -:  543:}
+        -:  544:
+        -:  545:/**********************************************************************************************************************************************
+        -:  546:*
+        -:  547:* Function name: IPToDomain
+        -:  548:*
+        -:  549:* Description:  converts input IP to .IN-ADDR.ARPA. format
+        -:  550:*
+        -:  551:* Return: pointer to formatted string
+        -:  552:*
+        -:  553:***********************************************************************************************************************************************
+        -:  554:
+        -:  555:char *IPToDomain(
+        -:  556:		char *IP_address	//ip address
+        -:  557:		)
+        -:  558:
+        -:  559:{
+        -:  560:	
+        -:  561:	LOGGER(LOG_CRITICAL,"Entering function:IP TO DOMAIN\n");
+        -:  562:
+        -:  563:	char	*token[4],
+        -:  564:		*temp,
+        -:  565:		*domain_name = NULL;
+        -:  566:
+        -:  567:	int i=0;
+        -:  568:	
+        -:  569:
+        -:  570:	//dynamically allocating memory to store the formatted string
+        -:  571:	temp = malloc((strlen((char *)IP_address) + 1) * sizeof(char));
+        -:  572:	if( NULL == temp)//if memory allocation fails
+        -:  573:	{
+        -:  574:		ERROR(ERROR_MAJOR,"memory allocation failed\n");
+        -:  575:		LOGGER(LOG_CRITICAL,"Exiting function:IP TO DOMAIN\n");
+        -:  576:		return domain_name;
+        -:  577:	}
+        -:  578:
+        -:  579:	strncpy(temp,(char *)IP_address,strlen((char *)IP_address)+1);
+        -:  580:	domain_name = malloc((strlen((char *)IP_address) + 15) * sizeof(char)); //IP + .IN-ADDR.ARPA.
+        -:  581:	strcpy((char *)domain_name,"");
+        -:  582:
+        -:  583:	token[0] = strtok(temp, ".");//tokenizing the input IP address
+        -:  584:	while(NULL != token[i])
+        -:  585:	{
+        -:  586:		i += 1;
+        -:  587:		token[i] = strtok(NULL, ".");
+        -:  588:	}//end while
+        -:  589:
+        -:  590:	for(i = 3; i>=0; i--)
+        -:  591:	{
+        -:  592:		strncat((char *)domain_name,token[i],strlen(token[i]) + 1);
+        -:  593:		strcat((char *)domain_name,".");
+        -:  594:	}//end for
+        -:  595:	strcat((char *)domain_name,"IN-ADDR.ARPA.");
+        -:  596:	LOGGER(LOG_CRITICAL,"Exiting function:IP TO DOMAIN\n");
+        -:  597:	return domain_name;
+        -:  598:}	
+        -:  599:*/
+        -:  600:
+        -:  601:/**********************************************************************************************************************************************
+        -:  602:	
+        -:  603:	FUNCTION DESCRIPTION
+        -:  604:	NAME:		create_message
+        -:  605:	WORK:		to create the DNS query message for DNS query and DNS inverse query.
+        -:  606:	ARGUMENTS:	buffer, query, qtype
+        -:  607:	RETURN VALUE:	length of the message(to be sent)
+        -:  608:
+        -:  609:*********************************************************************************************************************************************/
+        -:  610:
+        5:  611:int create_message(
+        -:  612:		      char *buffer,  		/*to contain message*/
+        -:  613:		      char *query,		/*containing IP address/domain_name*/
+        -:  614:		      int   qtype		/*to identify query type(IP address/domain_name)*/
+        -:  615:        	    )
+        -:  616:{
+        -:  617:	
+        -:  618:	/*FILE LOGGING*/
+        5:  619:	LOGGER(LOG_CRITICAL, "Start of function: create_message\n");
+        -:  620:
+        -:  621:	/*variable declarations*/
+        5:  622:	struct DNS_HEADER *header=NULL;
+        5:  623:	struct QUESTION *qinfo=NULL;
+        -:  624:
+        5:  625:	char	*temp		= NULL,
+        5:  626:		*free_temp	= NULL,
+        5:  627:		*qname		= NULL;
+        -:  628:
+        5:  629:	int msg_len = 0;
+        -:  630:	
+        -:  631:
+        -:  632:	/*set header pointer to the starting of the message*/
+        5:  633:	header = (struct DNS_HEADER *)buffer;	
+        -:  634:
+        -:  635:	/*set various header fields*/
+        5:  636:	header->id = (unsigned short) htons(getpid());		/*Identifier*/
+        5:  637:	header->qr = 0; 					/*query*/
+        -:  638:
+        -:  639:	/*if query is for IP address*/
+        5:  640:	if(T_A == qtype)
+        -:  641:	{
+        2:  642:		header->opcode = 0;			/*standard query*/
+        -:  643:	}
+        -:  644:
+        -:  645:	/*if query is for domain name (inverse query)*/
+        3:  646:	else if(T_PTR == qtype)
+        -:  647:	{
+        3:  648:		header->opcode =  1;		/*inverse query*/
+        -:  649:
+        -:  650:	}
+        -:  651:	
+        -:  652:	/*set various message header fields*/
+        5:  653:	header->aa = 0; 				/*Not authoritative*/
+        5:  654:	header->tc = 0;					/*no truncation*/
+        5:  655:	header->rd = 1;					/*recursion desired*/
+        5:  656:	header->ra = 0;					/*recursion not available*/
+        5:  657:	header->z  = 0;					/*for future use*/
+        5:  658:	header->ad = 0;
+        5:  659:	header->cd = 0;
+        5:  660:	header->rcode = 0;				/*to be used by server*/
+        5:  661:	header->q_count = htons(1);			/*number of questions asked by client*/
+        5:  662:	header->ans_count = 0;				/*number of answers (set by server)*/
+        5:  663:	header->auth_count = 0;
+        5:  664:	header->add_count = 0;
+        -:  665:	
+        -:  666:	/*set pointer after message header*/
+        5:  667:	qname = (char *)&buffer[sizeof(struct DNS_HEADER)];
+        -:  668:
+        -:  669:	/*query is for IP address*/
+        5:  670:	if(T_A == qtype)
+        -:  671:	{
+        -:  672:		/*set domain name in the DNS format*/
+        2:  673:		temp = HostToDns(query);	
+        2:  674:		free_temp = temp;
+        -:  675:	}
+        -:  676:
+        -:  677:	/*query is for domain_name*/
+        3:  678:	else if(T_PTR == qtype)
+        -:  679:	{
+        -:  680:		/*set IP address according to DNS format*/
+        -:  681:		//temp = IPToDomain(query);
+        3:  682:		temp = query;
+        -:  683:		
+        -:  684:	}
+        -:  685:
+        -:  686:	/*set formatted query in the proper place in the DNS message*/
+        5:  687:	strcpy(qname,temp);
+        5:  688:	if(NULL != free_temp)
+        -:  689:	{
+        1:  690:		free(free_temp);
+        -:  691:	}
+        -:  692:
+        -:  693:	/*move at appropriate position in message to set another fields*/
+        5:  694:	qinfo = (struct QUESTION *)&buffer[sizeof(struct DNS_HEADER) + (strlen((const char *)qname + 1))];
+        -:  695:	
+        5:  696:	qinfo->qtype = htons(qtype);			/*set query type in message*/
+        5:  697:	qinfo->qclass = htons(1);			/*set query class in message*/
+        -:  698:
+        -:  699:	/*finding total message length*/
+        5:  700:	msg_len = sizeof(struct DNS_HEADER) + strlen((char *)qname) + 1 + sizeof(struct QUESTION);
+        -:  701:
+        -:  702:
+        -:  703:	/*FILE LOGGING*/
+        5:  704:	LOGGER(LOG_CRITICAL, "End of function: create_message\n");
+        -:  705:
+        5:  706:	return msg_len;
+        -:  707:}							/*end of function*/
+        -:  708:
+        -:  709:/*********************************************************************************************************************************************
+        -:  710:	FUNCTION DESCRIPTION
+        -:  711:	NAME:		validate_ip
+        -:  712:	WORK:		to check that IP address entered by user is valid or not.
+        -:  713:	ARGUMENTS:	ip
+        -:  714:	RETURN VALUE:	SUCCESS or FAILURE
+        -:  715:*********************************************************************************************************************************************/
+        -:  716:
+       14:  717:int validate_ip(
+        -:  718:		char *ip			/*IP address*/
+        -:  719:		)
+        -:  720:{
+        -:  721:	
+        -:  722:	/*FILE LOGGING*/
+       14:  723:	LOGGER(LOG_CRITICAL, "Start of function: validate_ip\n");
+        -:  724:
+        -:  725:	/*variable declarations*/
+       14:  726:	char	*token	= NULL,
+       14:  727:		*temp	= NULL;
+        -:  728:
+       14:  729:	int	num	= 0,
+       14:  730:		count	= 0;
+        -:  731:
+        -:  732:	/*in dotted decimal notation maximum 15 char can be entered, so check for that*/
+       14:  733:	if(15 < strlen(ip) || isalpha(*ip))
+        -:  734:	{
+        -:  735:
+        -:  736:		/*LOGGING*/
+        1:  737:		LOGGER(LOG_CRITICAL, "invalid IP address\nexiting validate_ip function\n");
+        1:  738:		ERROR(ERROR_MINOR,"invalid ip\n");
+        1:  739:		return FAILURE;
+        -:  740:	}
+        -:  741:
+        -:  742:	/*check for special IP addersses*/
+        -:  743:
+        -:  744:	/*loopback address*/
+       13:  745:	if(0 == strcmp(ip,"127.0.0.1"))						
+        -:  746:	{
+    #####:  747:		printf("Local host\n");
+        -:  748:
+        -:  749:		/*LOGGING*/
+    #####:  750:		LOGGER(LOG_CRITICAL, "invalid IP address\nexiting validate_ip function\n");
+        -:  751:
+    #####:  752:		return FAILURE;
+        -:  753:	}
+        -:  754:
+        -:  755:	/*special unicast and broadcast*/
+       13:  756:	if((0 == strcmp(ip,"0.0.0.0")) || (0 == strcmp(ip,"255.255.255.255")))	
+        -:  757:	{
+    #####:  758:		printf("Special address\n");
+        -:  759:
+        -:  760:		/*LOGGING*/
+    #####:  761:		LOGGER(LOG_CRITICAL, "invalid IP address\nexiting validate_ip function\n");
+    #####:  762:		return FAILURE;
+        -:  763:	}
+        -:  764:
+       13:  765:	temp = malloc((strlen(ip) + 1) * sizeof(char));
+       13:  766:	if (NULL == temp)
+        -:  767:	{
+        3:  768:		printf("\nMalloc failed\n");
+        3:  769:		exit(FAILURE);
+        -:  770:	}
+        -:  771:
+       10:  772:	strncpy(temp, ip, strlen(ip) + 1);
+        -:  773:
+        -:  774:	/*check to ensure that each field in IP address is in range 0 - 255*/
+       10:  775:	token = strtok(temp, ".");
+       10:  776:	count++;
+        -:  777:
+       60:  778:	while(NULL != token)
+        -:  779:	{
+        -:  780:		/*remove each token of IP address*/
+       40:  781:		num = atoi(token);			
+        -:  782:
+        -:  783:		/*check the range*/
+       40:  784:		if(0 > num  || 254 < num)		
+        -:  785:		{
+    #####:  786:			free(temp);
+        -:  787:
+        -:  788:			/*LOGGING*/
+    #####:  789:			LOGGER(LOG_CRITICAL, "invalid IP address\nexiting validate_ip function\n");
+    #####:  790:			return FAILURE;
+        -:  791:		}
+        -:  792:		
+        -:  793:		/*remove another token from IP address*/
+       40:  794:		token = strtok(NULL,".");
+       40:  795:		count++;
+        -:  796:		
+        -:  797:	}
+       10:  798:	free(temp);
+       10:  799:	if(4 > count)
+        -:  800:	{
+        -:  801:		/*LOGGING*/
+    #####:  802:		LOGGER(LOG_CRITICAL, "invalid IP address\nexiting validate_ip function\n");
+    #####:  803:		return FAILURE;
+        -:  804:	}
+        -:  805:	/*FILE LOGGING*/
+       10:  806:	LOGGER(LOG_CRITICAL, "End of function: validate_ip\n");
+        -:  807:
+       10:  808:	return SUCCESS;
+        -:  809:}							/*end of function*/
+        -:  810:
+        -:  811:/**********************************************************************************************************************************************
+        -:  812:	FUNCTION DESCRIPTION
+        -:  813:	NAME:		Login_server
+        -:  814:	WORK:		to check the user authorization for DNS update.
+        -:  815:	ARGUMENTS:	sd, nameserver
+        -:  816:	RETURN VALUE:	SUCCESS or FAILURE
+        -:  817:***********************************************************************************************************************************************/
+        -:  818:
+       11:  819:int Login_server(
+        -:  820:			int sd,					/*socket descriptor*/
+        -:  821:			struct sockaddr_in *nameserver		/*adderss information of the server*/
+        -:  822:		)
+        -:  823:{
+        -:  824:
+        -:  825:	
+        -:  826:	/*FILE LOGGING*/
+       11:  827:	LOGGER(LOG_CRITICAL, "Start of function: Login_server\n");
+        -:  828:
+        -:  829:	/*variable declarations*/
+        -:  830:	login info;
+        -:  831:
+       11:  832:	socklen_t len=0;
+        -:  833:
+       11:  834:	int	is_send_success=0,
+       11:  835:		is_recv_success=0;
+        -:  836:
+       11:  837:	printf("enter username (less than 10 characters)\n");
+       11:  838:	scanf("%s",info.user);
+       11:  839:	printf("enter password (less than 10 characters)\n");
+       11:  840:	scanf("%s",info.password);
+        -:  841:
+        -:  842:	/*send username and password to the server for authorization*/
+       11:  843:	is_send_success = sendto(sd,"login",6,0,(struct sockaddr *)nameserver,sizeof(*nameserver));
+        -:  844:
+        -:  845:	/*error checking*/
+       11:  846:	if(0 > is_send_success){
+    #####:  847:		ERROR(ERROR_CRITICAL, "Error in sending login information to server...\n");
+    #####:  848:		LOGGER(LOG_CRITICAL, "returning from Login_server function\n");
+    #####:  849:		return FAILURE;
+        -:  850:	}
+        -:  851:
+       11:  852:	is_send_success = sendto(sd,&info,sizeof(info),0,(struct sockaddr *)nameserver,sizeof(*nameserver));
+        -:  853:
+        -:  854:	/*error checking*/
+       11:  855:	if(0 > is_send_success){
+    #####:  856:		ERROR(ERROR_CRITICAL, "Error in sending username and password  to server...\n");
+    #####:  857:		LOGGER(LOG_CRITICAL, "returning from Login_server function\n");
+    #####:  858:		return FAILURE;
+        -:  859:	}
+        -:  860:
+        -:  861:	/*receive message from server having authorization response data*/
+       11:  862:	recvfrom(sd,&info,sizeof(info),0,(struct sockaddr *)nameserver,&len);
+        -:  863:
+        -:  864:	/*error checking*/
+       11:  865:	if(0 > is_recv_success){
+    #####:  866:		ERROR(ERROR_CRITICAL, "Error in sending username and password  to server...\n");
+    #####:  867:		LOGGER(LOG_CRITICAL, "returning from Login_server function\n");
+    #####:  868:		return FAILURE;
+        -:  869:	}
+        -:  870:
+        -:  871:	/*FILE LOGGING*/
+       11:  872:	LOGGER(LOG_CRITICAL, "End of function: Login_server\n");
+        -:  873:
+       11:  874:	if(1 == info.response)
+        9:  875:		return SUCCESS;				/*if person is authorized*/
+        -:  876:	else
+        2:  877:		return FAILURE;				/*for unauthorization person*/
+        -:  878:
+        -:  879:}							/*end of function*/
+        -:  880:
+        -:  881:/**********************************************************************************************************************************************
+        -:  882:	FUNCTION DESCRIPTION
+        -:  883:	NAME:		save_and_display
+        -:  884:	WORK:		to save the DNS response received from the server and show the output to the user.
+        -:  885:	ARGUMENTS:	buffer, length, file
+        -:  886:	RETURN VALUE:	void
+        -:  887:**********************************************************************************************************************************************/
+        -:  888:
+        5:  889:void save_and_display(
+        -:  890:			char *buffer,			/*buffer holding the response from server*/
+        -:  891:			int length,				/*length of the message received*/
+        -:  892:			char *file				/*local dnsfile at client*/
+        -:  893:		     )
+        -:  894:{
+        -:  895:	
+        -:  896:	/*FILE LOGGING*/
+        5:  897:	LOGGER(LOG_CRITICAL, "Start of function: save_and_display\n");
+        -:  898:
+        -:  899:	/*variable declarations*/
+        5:  900:	FILE *fp=NULL;
+        -:  901:
+        5:  902:	struct DNS_HEADER *header	= NULL;
+        5:  903:	struct RES_RECORD *res_rec	= NULL;
+        -:  904:
+        5:  905:	int	count = 0,
+        5:  906:        	next_record=0;
+        -:  907:
+        -:  908:	/*to set header to the message header*/
+        5:  909:	header = (struct DNS_HEADER *)buffer;		
+        5:  910:	printf("<<--HEADER-->>\n");
+        -:  911:	
+        -:  912:	/*if server has successfully processed the query*/
+        5:  913:	if (header->qr == 1 && header->rcode == 0)
+        -:  914:	{
+        -:  915:
+        -:  916:		/*set pointer to the actual resource record contained in the message*/
+    #####:  917:		res_rec = (struct RES_RECORD *)&buffer[length + (count * sizeof(struct RES_RECORD))];
+        -:  918:
+        -:  919:		/*open file in append mode*/
+    #####:  920:		fp = fopen(file,"a");			
+        -:  921:
+        -:  922:		/*error checking*/
+    #####:  923:		if(NULL==fp)
+        -:  924:		{
+    #####:  925:			ERROR(ERROR_CRITICAL, "Error in opening local DNS file at client...\n");
+    #####:  926:			LOGGER(LOG_CRITICAL, "returning from save_and_display function\n");
+    #####:  927:			return ;
+        -:  928:		}
+        -:  929:
+    #####:  930:		printf("Received Data from Server\n");
+    #####:  931:		switch(header->opcode)			
+        -:  932:		{
+        -:  933:
+        -:  934:			/*if query was for IP address*/
+        -:  935:			case 0:							
+        -:  936:			
+        -:  937:				/*print the various fields of message*/
+    #####:  938:				printf("opcode:QUERY,status:NOERROR,id: %hu\n",header->id);
+    #####:  939:				printf("flags:qr,rd,ra; QUERY: %hu\n",(unsigned short)htons(header->q_count));
+    #####:  940:				printf("ANSWER: %hu\n",header->ans_count);
+    #####:  941:				printf("AUTHORITY: %hu\n",header->auth_count);
+    #####:  942:				printf("ADDITIONAL:%hu\n",header->add_count);
+    #####:  943:				printf("\n<<--QUESTION SECTION-->>\n");
+    #####:  944:				printf("%s\t\tIN\t",res_rec->name);
+    #####:  945:				printf("A\t");				
+        -:  946:
+    #####:  947:				printf("\n<<--ANSWER SECTION-->>\n");
+        -:  948:				/*write all resource records in the local file*/
+        -:  949:				while(1)
+        -:  950:				{
+    #####:  951:					fprintf(fp,"%s\t%s\t\t",res_rec->rdata,res_rec->name);
+    #####:  952:					fprintf(fp,"A\t");
+    #####:  953:					fprintf(fp,"IN\n");
+    #####:  954:					printf("%s\t\tIN\t",res_rec->name);
+    #####:  955:					printf("A\t");
+    #####:  956:					printf("%s\n",res_rec->rdata);
+    #####:  957:					count = count + 1;
+    #####:  958:					if(count >= header->ans_count){		
+        -:  959:
+        -:  960:						/*if all records have been traversed*/
+    #####:  961:						break;				
+        -:  962:					}
+    #####:  963:					next_record = count * sizeof(struct RES_RECORD);
+    #####:  964:					res_rec = (struct RES_RECORD *)&buffer[length + next_record];
+    #####:  965:				}							
+        -:  966:				/*end of while loop*/
+        -:  967:
+    #####:  968:				break;
+        -:  969:
+        -:  970:			/*if query was for domain name*/
+        -:  971:			case 1: 						
+        -:  972:
+        -:  973:				/*print the various fields of message on screen and file*/
+    #####:  974:				printf("opcode:IQUERY,status:NOERROR,id: %hu\n",header->id);
+    #####:  975:				printf("flags:qr,rd,ra; QUERY: %hu\n",(unsigned short)htons(header->q_count));
+    #####:  976:				printf("ANSWER: %hu\n",header->ans_count);
+    #####:  977:				printf("AUTHORITY: %hu\n",header->auth_count);
+    #####:  978:				printf("ADDITIONAL:%hu\n",header->add_count);
+    #####:  979:				printf("\n<<--QUESTION SECTION-->>\n");
+    #####:  980:				printf("%s\t\tIN\t",res_rec->rdata);
+    #####:  981:				printf("PTR\t");
+    #####:  982:				fprintf(fp,"%s\t%s\t\t",res_rec->rdata,res_rec->name);
+    #####:  983:				fprintf(fp,"PTR\t");
+    #####:  984:				fprintf(fp,"IN\n");
+    #####:  985:				printf("\n<<--ANSWER SECTION-->>\n");
+    #####:  986:				printf("%s\t\tIN\t",res_rec->name);
+    #####:  987:				printf("PTR\t");
+    #####:  988:				printf("%s\n",res_rec->rdata);
+        -:  989:				break;
+        -:  990:		}
+        -:  991:
+        -:  992:		/*close local file*/
+    #####:  993:		fclose(fp);
+        -:  994:	}	
+        -:  995:	
+        -:  996:	else
+        -:  997:	{
+        5:  998:		printf("RECORD NOT FOUND\n");
+        -:  999:	}
+        -: 1000:	/*FILE LOGGING*/
+        5: 1001:	LOGGER(LOG_CRITICAL, "End of function: save_and_display\n");
+        -: 1002:}										/*end of function*/

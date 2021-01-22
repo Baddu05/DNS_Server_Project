@@ -1,0 +1,465 @@
+
+Feb 22 14:08:30.246|19151-->  Exiting function:DNS_QUERY
+
+
+Feb 22 14:08:30.252|19151-->  Exiting function:main
+
+
+Feb 22 14:09:39.820|19163-->  Entering function:main
+
+
+Feb 22 14:09:39.824|19163-->  Entering function:REMOVE_PREFIX
+
+
+Feb 22 14:09:39.827|19163-->  Exiting function:REMOVE_PREFIX
+
+
+Feb 22 14:09:39.829|19163-->  Entering function:DNS_QUERY
+
+
+Feb 22 14:09:39.832|19163-->  entering SEARCH_LOCAL_CACHE function
+
+
+Feb 22 14:09:39.835|19163-->  exiting SEARCH_LOCAL_CACHE function
+
+
+Feb 22 14:09:39.838|19163-->  Exiting function:DNS_QUERY
+
+
+Feb 22 14:09:39.840|19163-->  Exiting function:main
+
+
+Feb 22 14:12:53.936|19242-->  Entering function:main
+
+
+Feb 22 14:12:53.939|19242-->  Start of function: Login_server
+
+
+Feb 22 14:13:01.997|19145-->  Entering function: Authenticate for server
+
+
+Feb 22 14:13:02.001|19145-->  Exiting function: Authenticate for server...
+
+
+Feb 22 14:13:02.001|19242-->  End of function: Login_server
+
+
+Feb 22 14:13:02.005|19242-->  Start of function: validate_ip
+
+
+Feb 22 14:13:02.007|19242-->  End of function: validate_ip
+
+
+Feb 22 14:13:02.010|19242-->  Entering function:UPDATE
+
+
+Feb 22 14:13:02.012|19242-->  Entering function:CREATE_UPDATE_MESSAGE
+
+
+Feb 22 14:13:02.017|19242-->  Exiting function:CREATE_UPDATE_MESSAGE
+
+
+Feb 22 14:13:02.020|19145-->  Server wait for client
+
+
+Feb 22 14:13:02.020|19145-->  Entering function: Update_Record for server...
+
+
+Feb 22 14:13:02.024|19145-->  Entering function: update_res_record for server...
+
+
+Feb 22 14:13:02.028|19242-->  UPDATE SUCCESSFULL
+
+
+Feb 22 14:13:02.031|19242-->  exiting function:UPDATE_LOCAL_CACHE
+
+
+Feb 22 14:13:02.029|19145-->  Entering function: Update_Record for server...
+
+
+Feb 22 14:13:02.043|19242-->  Exiting function:UPDATE_LOCAL_CACHE
+
+
+Feb 22 14:13:02.045|19242-->  Exiting function:UPDATE
+
+
+Feb 22 14:13:02.047|19242-->  Exiting function:main
+
+
+Feb 22 14:49:13.473|20042-->  Start of function:main, for server
+
+
+Feb 22 14:49:13.478|20042-->  Server wait for client
+
+
+Feb 22 14:49:33.860|20044-->  Entering function:main
+
+
+Feb 22 14:49:33.863|20044-->  Entering function:REMOVE_PREFIX
+
+
+Feb 22 14:49:33.866|20044-->  Exiting function:REMOVE_PREFIX
+
+
+Feb 22 14:49:33.869|20044-->  Entering function:DNS_QUERY
+
+
+Feb 22 14:49:33.871|20044-->  entering SEARCH_LOCAL_CACHE function
+
+
+Feb 22 14:49:33.882|20044-->  exiting SEARCH_LOCAL_CACHE function
+
+
+Feb 22 14:49:33.885|20044-->  Exiting function:DNS_QUERY
+
+
+Feb 22 14:49:33.887|20044-->  Exiting function:main
+
+
+Feb 22 14:50:20.936|20056-->  Entering function:main
+
+
+Feb 22 14:50:20.939|20056-->  Start of function: Login_server
+
+
+Feb 22 14:50:30.650|20042-->  Entering function: Authenticate for server
+
+
+Feb 22 14:50:30.653|20042-->  Exiting function: Authenticate for server...
+
+
+Feb 22 14:50:30.653|20056-->  End of function: Login_server
+
+
+Feb 22 14:50:30.658|20056-->  Start of function: validate_ip
+
+
+Feb 22 14:50:30.660|20056-->  End of function: validate_ip
+
+
+Feb 22 14:50:30.663|20056-->  Entering function:UPDATE
+
+
+Feb 22 14:50:30.665|20056-->  Entering function:CREATE_UPDATE_MESSAGE
+
+
+Feb 22 14:50:30.668|20056-->  Exiting function:CREATE_UPDATE_MESSAGE
+
+
+Feb 22 14:50:30.670|20042-->  Server wait for client
+
+
+Feb 22 14:50:30.670|20042-->  Entering function: Update_Record for server...
+
+
+Feb 22 14:50:30.675|20042-->  Entering function: update_res_record for server...
+
+
+Feb 22 14:50:30.681|20056-->  UPDATE SUCCESSFULL
+
+
+Feb 22 14:50:30.681|20042-->  Entering function: Update_Record for server...
+
+
+Feb 22 14:50:30.690|20056-->  exiting function:UPDATE_LOCAL_CACHE
+
+
+Feb 22 14:50:30.697|20056-->  Exiting function:UPDATE_LOCAL_CACHE
+
+
+Feb 22 14:50:30.700|20056-->  Exiting function:UPDATE
+
+
+Feb 22 14:50:30.703|20056-->  Exiting function:main
+
+
+Feb 22 14:57:45.649|20323-->  Start of function:main, for server
+
+
+Feb 22 14:57:45.653|20323-->  Server wait for client
+
+
+Feb 22 14:58:00.047|20324-->  Entering function:main
+
+
+Feb 22 14:58:39.543|20328-->  Entering function:main
+
+
+Feb 22 14:58:39.546|20328-->  Entering function:REMOVE_PREFIX
+
+
+Feb 22 14:58:39.549|20328-->  Exiting function:REMOVE_PREFIX
+
+
+Feb 22 14:58:39.551|20328-->  Entering function:DNS_QUERY
+
+
+Feb 22 14:58:39.554|20328-->  entering SEARCH_LOCAL_CACHE function
+
+
+Feb 22 14:58:39.557|20328-->  exiting SEARCH_LOCAL_CACHE function
+
+
+Feb 22 14:58:39.560|20328-->  Start of function: create_message
+
+
+Feb 22 14:58:39.564|20328-->  entering function: HOST TO DNS
+
+
+Feb 22 14:58:39.571|20328-->  exiting HOST TO DNS function
+
+
+Feb 22 14:58:39.574|20328-->  End of function: create_message
+
+
+Feb 22 14:58:39.576|20323-->  Server wait for client
+
+
+Feb 22 14:58:39.576|20323-->  Entering funtion: serve_client for server...
+
+
+Feb 22 14:58:39.581|20323-->  Entered function: Search_Record for server....
+
+
+Feb 22 14:58:39.583|20323-->  Entered function: dnstohost for server
+
+
+Feb 22 14:58:39.586|20323-->  Exiting function: dnstohost for server
+
+
+Feb 22 14:58:39.617|20323-->  Reading from file...
+
+
+Feb 22 14:58:39.620|20323-->  Finished reading file...
+
+
+Feb 22 14:58:39.623|20323-->  Exiting function: Search_Record for server...
+
+
+Feb 22 14:58:39.625|20328-->  Start of function: save_and_display
+
+
+Feb 22 14:58:39.625|20323-->  Exiting function: server_client for server...
+
+
+Feb 22 14:58:39.628|20328-->  End of function: save_and_display
+
+
+Feb 22 14:58:39.632|20328-->  Exiting function:DNS_QUERY
+
+
+Feb 22 14:58:39.635|20328-->  Exiting function:main
+
+
+Feb 22 14:59:38.358|20334-->  Entering function:main
+
+
+Feb 22 14:59:38.361|20334-->  Entering function:REMOVE_PREFIX
+
+
+Feb 22 14:59:38.364|20334-->  Exiting function:REMOVE_PREFIX
+
+
+Feb 22 14:59:38.366|20334-->  Entering function:DNS_QUERY
+
+
+Feb 22 14:59:38.369|20334-->  entering SEARCH_LOCAL_CACHE function
+
+
+Feb 22 14:59:38.372|20334-->  exiting SEARCH_LOCAL_CACHE function
+
+
+Feb 22 14:59:38.375|20334-->  Start of function: create_message
+
+
+Feb 22 14:59:38.377|20334-->  entering function: HOST TO DNS
+
+
+Feb 22 14:59:38.380|20334-->  exiting HOST TO DNS function
+
+
+Feb 22 14:59:38.382|20334-->  End of function: create_message
+
+
+Feb 22 14:59:38.384|20323-->  Server wait for client
+
+
+Feb 22 14:59:38.384|20323-->  Entering funtion: serve_client for server...
+
+
+Feb 22 14:59:38.396|20323-->  Entered function: Search_Record for server....
+
+
+Feb 22 14:59:38.399|20323-->  Entered function: dnstohost for server
+
+
+Feb 22 14:59:38.402|20323-->  Exiting function: dnstohost for server
+
+
+Feb 22 14:59:38.411|20323-->  Reading from file...
+
+
+Feb 22 14:59:38.414|20323-->  Finished reading file...
+
+
+Feb 22 14:59:38.416|20323-->  Exiting function: Search_Record for server...
+
+
+Feb 22 14:59:38.418|20334-->  Start of function: save_and_display
+
+
+Feb 22 14:59:38.418|20323-->  Exiting function: server_client for server...
+
+
+Feb 22 14:59:38.422|20334-->  End of function: save_and_display
+
+
+Feb 22 14:59:38.427|20334-->  Exiting function:DNS_QUERY
+
+
+Feb 22 14:59:38.429|20334-->  Exiting function:main
+
+
+Feb 22 15:00:08.809|20339-->  Entering function:main
+
+
+Feb 22 15:00:08.812|20339-->  Entering function:REMOVE_PREFIX
+
+
+Feb 22 15:00:08.815|20339-->  Exiting function:REMOVE_PREFIX
+
+
+Feb 22 15:00:08.819|20339-->  Entering function:DNS_QUERY
+
+
+Feb 22 15:00:08.822|20339-->  entering SEARCH_LOCAL_CACHE function
+
+
+Feb 22 15:00:08.826|20339-->  exiting SEARCH_LOCAL_CACHE function
+
+
+Feb 22 15:00:08.828|20339-->  Start of function: create_message
+
+
+Feb 22 15:00:08.831|20339-->  entering function: HOST TO DNS
+
+
+Feb 22 15:00:08.834|20339-->  exiting HOST TO DNS function
+
+
+Feb 22 15:00:08.836|20339-->  End of function: create_message
+
+
+Feb 22 15:00:08.839|20323-->  Server wait for client
+
+
+Feb 22 15:00:08.839|20323-->  Entering funtion: serve_client for server...
+
+
+Feb 22 15:00:08.851|20323-->  Entered function: Search_Record for server....
+
+
+Feb 22 15:00:08.854|20323-->  Entered function: dnstohost for server
+
+
+Feb 22 15:00:08.857|20323-->  Exiting function: dnstohost for server
+
+
+Feb 22 15:00:08.868|20323-->  Reading from file...
+
+
+Feb 22 15:00:08.871|20323-->  Finished reading file...
+
+
+Feb 22 15:00:08.874|20323-->  Exiting function: Search_Record for server...
+
+
+Feb 22 15:00:08.877|20339-->  Start of function: save_and_display
+
+
+Feb 22 15:00:08.877|20323-->  Exiting function: server_client for server...
+
+
+Feb 22 15:00:08.880|20339-->  End of function: save_and_display
+
+
+Feb 22 15:00:08.887|20339-->  Exiting function:DNS_QUERY
+
+
+Feb 22 15:00:08.890|20339-->  Exiting function:main
+
+
+Feb 22 15:00:23.746|20341-->  Entering function:main
+
+
+Feb 22 15:00:23.750|20341-->  Entering function:REMOVE_PREFIX
+
+
+Feb 22 15:00:23.753|20341-->  Exiting function:REMOVE_PREFIX
+
+
+Feb 22 15:00:23.756|20341-->  Entering function:DNS_QUERY
+
+
+Feb 22 15:00:23.759|20341-->  entering SEARCH_LOCAL_CACHE function
+
+
+Feb 22 15:00:23.763|20341-->  exiting SEARCH_LOCAL_CACHE function
+
+
+Feb 22 15:00:23.765|20341-->  Start of function: create_message
+
+
+Feb 22 15:00:23.769|20341-->  entering function: HOST TO DNS
+
+
+Feb 22 15:00:23.771|20341-->  exiting HOST TO DNS function
+
+
+Feb 22 15:00:23.774|20341-->  End of function: create_message
+
+
+Feb 22 15:00:23.777|20323-->  Server wait for client
+
+
+Feb 22 15:00:23.777|20323-->  Entering funtion: serve_client for server...
+
+
+Feb 22 15:00:23.783|20323-->  Entered function: Search_Record for server....
+
+
+Feb 22 15:00:23.786|20323-->  Entered function: dnstohost for server
+
+
+Feb 22 15:00:23.797|20323-->  Exiting function: dnstohost for server
+
+
+Feb 22 15:00:23.801|20323-->  Reading from file...
+
+
+Feb 22 15:00:23.803|20323-->  Finished reading file...
+
+
+Feb 22 15:00:23.806|20323-->  Exiting function: Search_Record for server...
+
+
+Feb 22 15:00:23.809|20341-->  Start of function: save_and_display
+
+
+Feb 22 15:00:23.810|20323-->  Exiting function: server_client for server...
+
+
+Feb 22 15:00:23.813|20341-->  End of function: save_and_display
+
+
+Feb 22 15:00:23.820|20341-->  Exiting function:DNS_QUERY
+
+
+Feb 22 15:00:23.831|20341-->  Exiting function:main
+
+
+Feb 22 15:00:31.636|20343-->  Entering function:main
+
+
+Feb 22 15:00:31.639|20343-->  Entering function:REMOVE_PREFIX
+

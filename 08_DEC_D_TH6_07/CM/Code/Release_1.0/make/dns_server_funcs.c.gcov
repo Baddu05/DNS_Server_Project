@@ -1,0 +1,799 @@
+        -:    0:Source:../src/dns_server_funcs.c
+        -:    0:Graph:dns_server_funcs.gcno
+        -:    0:Data:dns_server_funcs.gcda
+        -:    0:Runs:2
+        -:    0:Programs:1
+        -:    1:
+        -:    2:/**********************************************************************************************************************************************
+        -:    3:*                       FILE NAME       :  dns_server_funcs.c
+        -:    4:*
+        -:    5:*                       DESCRIPTION     :  contains all the functions thatare called to serve client in dns 
+        -:    6:*
+        -:    7:*       DATE            NAME                    REFERENCE       REASON
+        -:    8:*    								Project
+        -:    9:*
+        -:   10:*       copyright @2015,Aricent Technologies(Holdings) Ltd.,
+        -:   11:**********************************************************************************************************************************************/
+        -:   12:
+        -:   13:
+        -:   14:/***********************************************************************************************************************************************
+        -:   15:*
+        -:   16:*                                HEADER FILES
+        -:   17:*
+        -:   18:***********************************************************************************************************************************************/
+        -:   19:
+        -:   20:#include "header_server.h"
+        -:   21:#include <errno.h>
+        -:   22:#include "logger.h"
+        -:   23:
+        -:   24:/**********************************************************************************************************************************************
+        -:   25:*
+        -:   26:*       			GLOBAL VARIABLES                         
+        -:   27:*
+        -:   28:**********************************************************************************************************************************************/
+        -:   29:
+        -:   30:int g_trace_level = DETAILED_TRACE;
+        -:   31:pthread_mutex_t mutex1 = PTHREAD_MUTEX_INITIALIZER;
+        -:   32:pthread_mutex_t mutex2 = PTHREAD_MUTEX_INITIALIZER;
+        -:   33:
+        -:   34:/*********************************************************************************************************************************************
+        -:   35:*
+        -:   36:* 	Function name: my_handler
+        -:   37:*
+        -:   38:* 	Description: Signal handler function to exit from server
+        -:   39:*
+        -:   40:* 	Return: no return value
+        -:   41:*
+        -:   42:**********************************************************************************************************************************************/
+        -:   43:
+        2:   44:void my_handler( 
+        -:   45:		int sig // return value of signal
+        -:   46:		 )
+        -:   47:
+        -:   48:{
+        2:   49:	printf("\nExiting from Server .. \n");
+        2:   50:	exit(1);
+        -:   51:}
+        -:   52:
+        -:   53:/*********************************************************************************************************************************************
+        -:   54:*
+        -:   55:* 	Function name: serve_client
+        -:   56:*
+        -:   57:* 	Description: Thread initiating function that call other funtions to serve client
+        -:   58:*
+        -:   59:* 	Return: no return value
+        -:   60:*
+        -:   61:**********************************************************************************************************************************************/
+        -:   62:
+        -:   63:
+        5:   64:void serve_client(
+        -:   65:		  void *arg //structure of Thread_client type
+        -:   66:		)
+        -:   67:
+        -:   68:
+        -:   69:{
+        -:   70:
+        5:   71:	LOGGER(LOG_CRITICAL, "Entering funtion: serve_client for server...\n");
+        -:   72:	
+        5:   73:	int	search_ret	= 0,
+        5:   74:		rec_count	= 0,
+        5:   75:		len 		= 0;
+        -:   76:
+        5:   77:	Thread_client *client = (Thread_client *)arg;
+        -:   78:	
+        5:   79:	char *buf = client->buffer;
+        5:   80:	int sd = client->sd;
+        -:   81:	socklen_t structlength;
+        -:   82:	
+        -:   83:	struct DNS_HEADER *head;
+        -:   84:	struct QUESTION *qinfo;
+        -:   85:	char *qname;
+        -:   86:	
+        -:   87:	
+        -:   88:
+        5:   89:	structlength = sizeof(struct sockaddr_storage);
+        -:   90:	
+        -:   91:	/* Detaching  this thread */
+        5:   92:	pthread_detach(pthread_self());
+        -:   93:	
+        -:   94:	/* decrementing global variable 'count' to decrease the number of clients to be served concurrently */
+        -:   95:
+        5:   96:	pthread_mutex_lock(&mutex1);
+        5:   97:	count = count - 1;
+        5:   98:	pthread_mutex_unlock(&mutex1);
+        -:   99:	
+        -:  100:
+        -:  101:
+        -:  102:
+        -:  103:	/* set header and question fields in buffer */
+        -:  104:
+        5:  105:	head = (struct DNS_HEADER *)buf;
+        5:  106:	qname = (char *)&buf[sizeof(struct DNS_HEADER)];
+        5:  107:	qinfo = (struct QUESTION *)&buf[sizeof(struct DNS_HEADER) + strlen((char *)qname)+1];
+        -:  108:	
+        -:  109:	/* Search record in database */
+        -:  110:
+        5:  111:	search_ret = Search_Record("resource_records",buf,qinfo->qtype,&rec_count);
+        5:  112:	if(SUCCESS == search_ret)
+        -:  113:	{
+    #####:  114:		LOGGER(LOG_CRITICAL, "successful search\n");
+        -:  115:		
+        -:  116:		/* set response code in header to success */
+        -:  117:		
+    #####:  118:		head->rcode = 0;
+        -:  119:		
+        -:  120:		/* assign the length of the message to be sent to client */
+        -:  121:		
+    #####:  122:		len = sizeof(struct DNS_HEADER) + (strlen((char *)qname) + 1) + sizeof(struct QUESTION) + (rec_count * sizeof(struct RES_RECORD));
+        -:  123:	}
+        -:  124:	
+        -:  125:	/* Search unsuccessful */
+        -:  126:	else
+        -:  127:	{	
+        -:  128:		/* set response code in header to server failure */
+        -:  129:
+        5:  130:		head->rcode = 2;
+        -:  131:		
+        -:  132:		/*assign the length of the message to be sent to client */
+        -:  133:
+        5:  134:		len = sizeof(struct DNS_HEADER) + strlen((char *)qname) + 1;
+        -:  135:	}
+        -:  136:	
+        -:  137:	/* set query or reponse code */
+        -:  138:
+        5:  139:	head->qr = 1;
+        -:  140:	
+        -:  141:	/* assign number of answer records in header */
+        -:  142:
+        5:  143:	head->ans_count = rec_count;
+        -:  144:	
+        -:  145:	/* send the response message in buffer to client */
+        -:  146:
+        5:  147:	int ret = sendto(sd,client->buffer,len,0,(struct sockaddr *)&client->cliaddr,structlength);
+        5:  148:	if (0 > ret)
+        -:  149:	{
+    #####:  150:		ERROR(ERROR_MAJOR, "Error sending to client\n");
+        -:  151:	
+    #####:  152:		LOGGER(LOG_CRITICAL, "Exiting funtion: server_client for server...\n");
+    #####:  153:		exit(FAILURE);
+        -:  154:	}
+        -:  155:
+        -:  156:	/*increment count variable to indicate one client is served */
+        -:  157:
+        5:  158:	pthread_mutex_lock(&mutex1);
+        5:  159:	count = count + 1;
+        5:  160:	pthread_mutex_unlock(&mutex1);
+        -:  161:	
+        -:  162:	//free(client->th);
+        5:  163:	free(client);
+        -:  164:	
+        5:  165:	LOGGER(LOG_CRITICAL, "Exiting function: server_client for server...\n");	
+        -:  166:	
+        -:  167:	//pthread_exit(NULL);
+        5:  168:}
+        -:  169:
+        -:  170:/***********************************************************************************************************************************************
+        -:  171:*
+        -:  172:* 	Function name: Search_Record
+        -:  173:*
+        -:  174:* 	Description: searches the file containing all the resource records for query 
+        -:  175:*	       or inverse query by client
+        -:  176:*
+        -:  177:* 	Return: SUCCESS OR FAILURE
+        -:  178:*
+        -:  179:***********************************************************************************************************************************************/
+        -:  180:
+        5:  181:int Search_Record(
+        -:  182:		  char *filename,	/*name of resource_record file*/
+        -:  183:		  char *buf,		/*buffer*/
+        -:  184:		  unsigned short type,	/*q_type*/
+        -:  185:		  int *count		/* record count */
+        -:  186:		)
+        -:  187:
+        -:  188:
+        -:  189:{
+        5:  190:	LOGGER(LOG_CRITICAL, "Entered function: Search_Record for server....\n");
+        -:  191:	
+        -:  192:	FILE *fp;
+        -:  193:	
+        5:  194:	int flag	= FAILURE;
+        -:  195:
+        -:  196:	int	read_ret,
+        -:  197:		offset;
+        -:  198:	
+        -:  199:	struct RES_RECORD file_res;
+        -:  200:	struct DNS_HEADER *head;
+        5:  201:	struct RES_RECORD *rec = NULL;
+        -:  202:	struct QUESTION *qinfo;
+        -:  203:	char *qname;
+        -:  204:	
+        -:  205:	char *host;
+        5:  206:	char *free_temp = NULL;
+        -:  207:	char temp[IP_SIZE];
+        -:  208:
+        -:  209:	/* typecasting buffer to retreive DNS_HEADER */
+        -:  210:
+        5:  211:	head = (struct DNS_HEADER *)buf;
+        -:  212:	
+        -:  213:	/* typecasting buffer to retrieve question name */
+        -:  214:
+        5:  215:	qname = (char *)&buf[sizeof(struct DNS_HEADER)];
+        -:  216:
+        -:  217:	
+        -:  218:	/* typecasting buffer to retrieve question type and class fields */
+        -:  219:
+        5:  220:	qinfo = (struct QUESTION *)&buf[sizeof(struct DNS_HEADER) + strlen((char *)qname)+1];
+        -:  221:	
+        -:  222:
+        5:  223:	if(0 == head->opcode)
+        -:  224:	{
+        1:  225:		host = dnstohost(qname);// if query, convert dns format to host format to search in records file (ex:3wwww3msn3com0 to www.msn.com)
+        1:  226:		free_temp = host;
+        -:  227:	}
+        4:  228:	else if(1 == head->opcode) 
+        -:  229:	{
+        3:  230:		host = qname;
+        -:  231:	}
+        -:  232:	
+        5:  233:	fp = fopen(filename,"r");
+        5:  234:	if(NULL == fp)
+        -:  235:	{
+    #####:  236:		ERROR(ERROR_MAJOR, "CANNOT OPEN RECORDS FILE...\n");
+    #####:  237:		LOGGER(LOG_CRITICAL, "Exiting function: Search_Record for server...\n");
+        -:  238:		
+    #####:  239:		if(NULL != free_temp)
+        -:  240:		{
+    #####:  241:			free(free_temp);
+        -:  242:		}
+    #####:  243:		return FAILURE;
+        -:  244:	}
+        -:  245:
+        5:  246:	LOGGER(LOG_MINOR,"Reading from file...\n");
+        -:  247:
+        -:  248:	/* allocating memory to Resource structure pointer to retrieve records from file */
+        -:  249:	
+        -:  250:	/*rec = malloc(sizeof(struct RES_RECORD));
+        -:  251:	if(NULL == rec)
+        -:  252:	{
+        -:  253:		ERROR(ERROR_MAJOR, "Error allocating memory..\n");
+        -:  254:		LOGGER(LOG_CRITICAL, "Exiting function: Search_Record for server...\n");
+        -:  255:		
+        -:  256:		if(NULL != free_temp)
+        -:  257:		{
+        -:  258:			free(free_temp);
+        -:  259:		}
+        -:  260:		return FAILURE;
+        -:  261:	}*/
+        -:  262:
+        -:  263:	
+        -:  264:	/* Search records from file until End of file is reached */
+        -:  265:	
+        -:  266:	while(1)
+        -:  267:	{
+      124:  268:		memset(&file_res,0,sizeof(struct RES_RECORD));
+      124:  269:		read_ret = fread(&file_res,sizeof(struct RES_RECORD),1,fp);
+      124:  270:		if(0 > read_ret)
+        -:  271:		{
+    #####:  272:			ERROR(ERROR_MAJOR, "Error reading from file\n");
+    #####:  273:			fclose(fp);
+    #####:  274:			LOGGER(LOG_CRITICAL, "Exiting function: Search_Records for server...\n");
+        -:  275:
+    #####:  276:			if(NULL != free_temp)
+        -:  277:			{
+    #####:  278:				free(free_temp);
+        -:  279:			}
+    #####:  280:			return FAILURE;
+        -:  281:		}
+      124:  282:		if(0 == read_ret)
+        -:  283:		{
+        5:  284:			LOGGER(LOG_MINOR,"Finished reading file...\n");	
+        5:  285:			break;
+        -:  286:		}
+        -:  287:		
+        -:  288:		/* check the type of query */
+      119:  289:		switch(qinfo->qtype)
+        -:  290:		{
+        -:  291:			case T_A: /* case for DNS lookup or query  saved in records file as A Records */
+        -:  292:				
+       23:  293:				if(0 == strncasecmp((char *)host, file_res.name, strlen((char *)host) + 1))
+        -:  294:				{
+        -:  295:					/* if found set offset in buffer */
+    #####:  296:					offset = sizeof(struct DNS_HEADER) + strlen((char *)qname) + 1 + sizeof(struct QUESTION)+ (*count * sizeof(struct RES_RECORD));
+        -:  297:					/* move to next record using offset */
+    #####:  298:					rec = (struct RES_RECORD *)&buf[offset];
+    #####:  299:					LOGGER(LOG_MINOR, "match found\n");
+        -:  300:
+        -:  301:					/* assign the records fields to resource record structure fields to send as a resoponse to client */
+        -:  302:
+    #####:  303:					assign_record(rec,host,file_res.rdata,&file_res);
+        -:  304:					
+        -:  305:					/* increment the count of number of records count */
+    #####:  306:					*count = *count + 1;
+        -:  307:					
+    #####:  308:					flag = SUCCESS;
+        -:  309:				}
+       23:  310:				break;
+        -:  311:
+        -:  312:			case T_PTR:/* case for DNS Inverse query saved in records file as PTR records */
+        -:  313:				
+       69:  314:				if(0 == strncmp((char *)host,file_res.rdata,strlen((char *)host)))
+        -:  315:				{
+    #####:  316:					offset = sizeof(struct DNS_HEADER) + strlen((char *)qname) + 1 + sizeof(struct QUESTION)+ (*count * sizeof(struct RES_RECORD));
+    #####:  317:					rec = (struct RES_RECORD *)&buf[offset];
+        -:  318:					
+    #####:  319:					strcpy(temp,file_res.rdata);
+        -:  320:					
+        -:  321:					/* convert IN-ADDR.ARPA. domain format of IP to dotted decimal IP address format */
+        -:  322:
+        -:  323:					//DomainToIP(temp);
+        -:  324:
+        -:  325:					/* assign the records fields to resource record structure fields to send as a response to client */
+        -:  326:					
+    #####:  327:					assign_record(rec,file_res.name,temp,&file_res);	
+        -:  328:
+        -:  329:					/* there is only one domain name corresponding to IN-ADDR.ARPA. format of IP address */
+        -:  330:					
+    #####:  331:					*count = 1;
+        -:  332:
+    #####:  333:					flag = SUCCESS;
+        -:  334:				}
+        -:  335:				break;
+        -:  336:		}
+      119:  337:	}
+        -:  338:
+        5:  339:	fclose(fp);
+        -:  340:
+        5:  341:	if(NULL != free_temp)
+        -:  342:	{
+        1:  343:		free(free_temp);
+        -:  344:	}
+        5:  345:	LOGGER(LOG_CRITICAL, "Exiting function: Search_Record for server...\n");
+        5:  346:	return flag;
+        -:  347:	
+        -:  348:}
+        -:  349:
+        -:  350:/***********************************************************************************************************************************************
+        -:  351:*
+        -:  352:* 	Function name: assign_record
+        -:  353:*
+        -:  354:* 	Description: this function sets the resource record fields from the fields of 
+        -:  355:*		Resource record found in file
+        -:  356:*
+        -:  357:* 	Return: no return value
+        -:  358:*
+        -:  359:**********************************************************************************************************************************************/
+        -:  360:
+    #####:  361:void assign_record(
+        -:  362:			struct RES_RECORD *rec,		//resource record structure type
+        -:  363:			char *request,			//domain name
+        -:  364:			char *response,			// ip address
+        -:  365:			struct RES_RECORD *file_res	//pointer of RES_RECORD structure type
+        -:  366:			)
+        -:  367:
+        -:  368:{
+        -:  369:	
+    #####:  370:	LOGGER(LOG_CRITICAL, "Entering function: assign_record for server...\n");
+        -:  371:	
+    #####:  372:	strcpy(rec->name,request);
+    #####:  373:	rec->resource.type = file_res->resource.type;
+    #####:  374:	rec->resource._class = file_res->resource._class;
+    #####:  375:	rec->resource.ttl = file_res->resource.ttl;
+    #####:  376:	rec->resource.data_len = file_res->resource.data_len;
+    #####:  377:	strcpy(rec->rdata,response);		
+        -:  378:	
+    #####:  379:	LOGGER(LOG_CRITICAL, "Exiting function: assign_record for server...\n");
+    #####:  380:}
+        -:  381:	
+        -:  382:/***********************************************************************************************************************************************
+        -:  383:*
+        -:  384:* 	Function name: dnstohost 
+        -:  385:*
+        -:  386:*	Description: converts dns format of domain_name to host
+        -:  387:*	       (ex: 3www3msn3com0 to www.msn.com
+        -:  388:*
+        -:  389:* 	Return: return address of converted string or NULL on failure in allocation
+        -:  390:*
+        -:  391:***********************************************************************************************************************************************/
+        -:  392:
+        1:  393:char *dnstohost(
+        -:  394:		char *dns	//dns
+        -:  395:		)
+        -:  396:
+        -:  397:{
+        -:  398:	
+        1:  399:	int	num	= 0,
+        1:  400:		num1	= 0,
+        1:  401:		num2	= 0,
+        -:  402:		j; /*index for for loop */
+        -:  403:	
+        -:  404:	char *temp;
+        -:  405:	char *host;
+        -:  406:	
+        1:  407:	LOGGER(LOG_CRITICAL, "Entered function: dnstohost for server\n");	
+        -:  408:	
+        -:  409:	/* allcating memory for host */
+        -:  410:
+        1:  411:	host = malloc((strlen((char *)dns) +1) * sizeof(char));
+        1:  412:	if(NULL == host)
+        -:  413:	{
+    #####:  414:		ERROR(ERROR_MAJOR, "Memory allcation error\n");
+    #####:  415:		LOGGER(LOG_CRITICAL, "Exiting function: dnstohost for server\n");	
+    #####:  416:		return NULL;
+        -:  417:	}
+        -:  418:
+        -:  419:
+        1:  420:	temp = host;
+        -:  421:	/* read charaters untill null character is reached */
+        -:  422:
+        5:  423:	while(*dns != '\0')
+        -:  424:	{
+        3:  425:		if(isdigit(*dns))
+        -:  426:		{
+        3:  427:			num1 = *dns++ - 48;
+        3:  428:			if(isdigit(*dns))
+        -:  429:			{
+    #####:  430:				num2 = *dns++ - 48;
+    #####:  431:				num = num1*10 + num2;
+        -:  432:			}
+        -:  433:			else
+        -:  434:			{
+        3:  435:				num = num1;
+        -:  436:			}
+        -:  437:
+       14:  438:			for(j=0; j<num; j++)
+        -:  439:			{
+       11:  440:				*temp++ = *dns++;
+        -:  441:			}
+        3:  442:			*temp++ = '.';
+        -:  443:		}
+        -:  444:		
+        -:  445:	}
+        -:  446:	
+        1:  447:	temp = temp - 1;
+        1:  448:	*temp = '\0';
+        -:  449:
+        1:  450:	LOGGER(LOG_CRITICAL, "Exiting function: dnstohost for server\n");		
+        1:  451:	return host;
+        -:  452:}
+        -:  453:
+        -:  454:/*********************************************************************************************************************************************
+        -:  455:*
+        -:  456:* 	Function name: DomainToIP
+        -:  457:*
+        -:  458:* 	Description: converts IN-ADDR.ARPA. domain format of IP to IP address format
+        -:  459:*
+        -:  460:* 	Return: no return value
+        -:  461:*
+        -:  462:**********************************************************************************************************************************************/
+        -:  463:
+        -:  464:/*void DomainToIP(
+        -:  465:		char *domain	//domain name
+        -:  466:		)
+        -:  467:
+        -:  468:{
+        -:  469:	
+        -:  470:	char temp[IP_SIZE];
+        -:  471:	char *token[4];
+        -:  472:	int index=0;
+        -:  473:	
+        -:  474:	LOGGER(LOG_CRITICAL, "Entering  function: DomainToIP for server\n");		
+        -:  475:	
+        -:  476:	strcpy(temp,domain);
+        -:  477:	strcpy(domain,"");
+        -:  478:	
+        -:  479:	token[0] = strtok(temp,".");
+        -:  480:
+        -:  481:	while(NULL != token[index])
+        -:  482:	{
+        -:  483:		index += 1;
+        -:  484:		if(index == 4)
+        -:  485:			break;
+        -:  486:		token[index] = strtok(NULL,".");
+        -:  487:	}
+        -:  488:
+        -:  489:	for(index = 3;index >= 0; index--)
+        -:  490:	{
+        -:  491:		strncat(domain,token[index],strlen(token[index])+1);
+        -:  492:		strcat(domain,".");
+        -:  493:	}
+        -:  494:	domain[strlen(domain)-1] = '\0';
+        -:  495:
+        -:  496:	LOGGER(LOG_CRITICAL, "Exiting function: dnstohost for server\n");		
+        -:  497:}
+        -:  498:*/
+        -:  499:/*******************************************************************************************************************************************
+        -:  500:*
+        -:  501:* 	Function name: Authenticate
+        -:  502:*
+        -:  503:* 	Description: recieves login information from client and authenticates 
+        -:  504:*
+        -:  505:* 	Return: returns SUCCESS or FAILURE
+        -:  506:*
+        -:  507:******************************************************************************************************************************************/
+        -:  508:
+       10:  509:int Authenticate(
+        -:  510:		int sd,			//socket descriptor
+        -:  511:		struct sockaddr_storage *clientaddr	//socket structure type 
+        -:  512:		)
+        -:  513:
+        -:  514:{
+        -:  515:
+        -:  516:	
+       10:  517:	LOGGER(LOG_CRITICAL, "Entering function: Authenticate for server\n");	
+        -:  518:	
+        -:  519:	/* login structure variable to read from file and recieve from client */
+        -:  520:
+        -:  521:	login login_info;
+        -:  522:	login file_log;
+       10:  523:	int	recv_ret 	= 0,
+       10:  524:		send_ret 	= 0,
+       10:  525:		 n		= 0;
+        -:  526:
+       10:  527:	socklen_t len = sizeof(struct sockaddr_storage);
+        -:  528:	
+        -:  529:	FILE *fp;	
+        -:  530:
+        -:  531:	
+       10:  532:	recv_ret = recvfrom(sd,&login_info,sizeof(login),0,(struct sockaddr *)clientaddr,&len);
+       10:  533:	if(0 > recv_ret)
+        -:  534:	{
+    #####:  535:		ERROR(ERROR_MAJOR,"Error in recieveing message\n");
+    #####:  536:		LOGGER(LOG_CRITICAL,"Exiting function: Authenticate for server...\n");
+    #####:  537:		return FAILURE;
+        -:  538:	}
+        -:  539:
+        -:  540:	/* open login file */
+        -:  541:
+       10:  542:	fp = fopen("login","r");
+       10:  543:	if(NULL == fp)
+        -:  544:	{	
+    #####:  545:		ERROR(ERROR_MAJOR,"Error in opening file\n");
+    #####:  546:		LOGGER(LOG_CRITICAL,"Exiting function: Authenticate for server...\n");
+    #####:  547:		return FAILURE;
+        -:  548:	}
+        -:  549:
+        -:  550:
+        -:  551:	while(1)
+        -:  552:	{
+       32:  553:		n = fread(&file_log,sizeof(login),1,fp);
+       32:  554:		if(0 > n)
+        -:  555:		{
+    #####:  556:			ERROR(ERROR_MAJOR,"Error in reading from file\n");
+    #####:  557:			LOGGER(LOG_CRITICAL,"Exiting function: Authenticate for server...\n");
+    #####:  558:			fclose(fp);
+    #####:  559:			return FAILURE;
+        -:  560:		}
+        -:  561:			
+       32:  562:		if(0 == n)// end of file
+        -:  563:		{
+        -:  564:			/* failure in finding login information sent from client */
+        -:  565:
+        2:  566:			login_info.response = FAILURE;
+        -:  567:			
+        -:  568:			/* send response to client */
+        -:  569:
+        2:  570:			send_ret = sendto(sd,&login_info,sizeof(login_info),0,(struct sockaddr *)clientaddr,sizeof(*clientaddr));
+        2:  571:			if(0 > send_ret)
+        -:  572:			{	
+    #####:  573:				ERROR(ERROR_MAJOR,"Error in sending to client\n");
+    #####:  574:				LOGGER(LOG_CRITICAL,"Exiting function: Authenticate for server...\n");
+    #####:  575:				return FAILURE;
+        -:  576:			}
+        -:  577:
+        2:  578:			LOGGER(LOG_CRITICAL,"Exiting function: Authenticate for server...\n");
+        2:  579:			fclose(fp);
+        2:  580:			return FAILURE;
+        -:  581:		}
+       30:  582:		if((0 == strcmp(login_info.user,file_log.user)) && (0 == strcmp(login_info.password, file_log.password)))
+        -:  583:		{
+        -:  584:			/* successfull login */
+        -:  585:
+        8:  586:			login_info.response = SUCCESS;
+        -:  587:
+        -:  588:			/* send response to  client */
+        8:  589:			send_ret = sendto(sd,&login_info,sizeof(login_info),0,(struct sockaddr *)clientaddr,sizeof(*clientaddr));
+        8:  590:			if(0 > send_ret)
+        -:  591:			{	
+    #####:  592:				ERROR(ERROR_MAJOR,"Error in sending to client\n");
+    #####:  593:				LOGGER(LOG_CRITICAL,"Exiting function: Authenticate for server...\n");
+    #####:  594:				fclose(fp);
+    #####:  595:				return FAILURE;
+        -:  596:			}	
+        -:  597:			
+        8:  598:			LOGGER(LOG_CRITICAL,"Exiting function: Authenticate for server...\n");
+        8:  599:			fclose(fp);
+        8:  600:			return SUCCESS;
+        -:  601:		}
+       22:  602:	}
+        -:  603:}
+        -:  604:
+        -:  605:/*******************************************************************************************************************************************
+        -:  606:*
+        -:  607:* 	Function name: Update_Record
+        -:  608:*
+        -:  609:*	Description: Update the record sent from client 
+        -:  610:*
+        -:  611:*	Return: no return value
+        -:  612:*
+        -:  613:*********************************************************************************************************************************************/
+        -:  614:
+        8:  615:void Update_Record(
+        -:  616:			void *arg //structure of Thread_Client structure type
+        -:  617:		)
+        -:  618:
+        -:  619:{
+        -:  620:
+        -:  621:	
+        8:  622:	LOGGER(LOG_CRITICAL, "Entering function: Update_Record for server...\n");
+        -:  623:
+        8:  624:	Thread_client *client = (Thread_client *)arg;
+        -:  625:	
+        8:  626:	char *buf = client->buffer;
+        -:  627:
+        8:  628:	int sd = client->sd;
+        -:  629:
+        -:  630:	struct DNS_HEADER *head;
+        -:  631:
+        8:  632:	int	status		= 0,	
+        8:  633:		send_ret	= 0;
+        -:  634:	
+        -:  635:	
+        8:  636:	head = (struct DNS_HEADER *)buf;
+        -:  637:	
+        8:  638:	status = update_res_record("resource_records",buf,head->z);
+        -:  639:
+        8:  640:	head->qr = 1; // set qr field to response
+        -:  641:	
+        8:  642:	if(SUCCESS == status)
+        -:  643:	{
+        6:  644:		head->rcode = 0; // set reponse code success
+        -:  645:	}
+        -:  646:	else
+        -:  647:	{	
+        2:  648:		head->rcode = 1;// set response code to server failure
+        -:  649:	}
+        -:  650:	
+        -:  651:	/* sending response to client */
+        -:  652:
+        8:  653:	send_ret = sendto(sd,(char *)buf,sizeof(struct DNS_HEADER),0,(struct sockaddr *)&client->cliaddr,sizeof(client->cliaddr));
+        8:  654:	if(0 > send_ret)
+        -:  655:	{
+    #####:  656:		ERROR(ERROR_MAJOR, "Error in sending to client..\n");
+    #####:  657:		LOGGER(LOG_CRITICAL, "Entering function: Update_Record for server...\n");
+    #####:  658:		return;
+        -:  659:	}
+        -:  660:
+        8:  661:	LOGGER(LOG_CRITICAL, "Entering function: Update_Record for server...\n");
+        -:  662:}
+        -:  663:
+        -:  664:/**********************************************************************************************************************************************
+        -:  665:*
+        -:  666:* 	Function name: update_res_record
+        -:  667:*
+        -:  668:* 	Description: update the resource reoord in file
+        -:  669:*
+        -:  670:* 	Return: returns SUCCESS OR FAILURE
+        -:  671:*
+        -:  672:**********************************************************************************************************************************************/
+        -:  673:
+        8:  674:int update_res_record(
+        -:  675:			char *filename,
+        -:  676:			char *buffer,
+        -:  677:			unsigned char update_option
+        -:  678:			)
+        -:  679:
+        -:  680:{
+        -:  681:
+        -:  682:	
+        8:  683:	LOGGER(LOG_CRITICAL, "Entering function: update_res_record for server...\n");
+        -:  684:
+        -:  685:	struct RES_RECORD *record;
+        -:  686:	struct RES_RECORD file_res;
+        -:  687:	
+        8:  688:	int	n		= 0,
+        8:  689:		flag		= FAILURE,
+        8:  690:		write_ret	= 0;
+        -:  691:
+        -:  692:	FILE *fp;
+        -:  693:		
+        -:  694:	/* typecast buffer to RES_RECORD field */
+        -:  695:
+        8:  696:	record = (struct RES_RECORD *)&buffer[sizeof(struct DNS_HEADER)];
+        -:  697:	
+        8:  698:	memset(&file_res,0,sizeof(struct RES_RECORD));
+        -:  699:
+        8:  700:	pthread_mutex_lock(&mutex2);
+        -:  701:
+        8:  702:	fp = fopen(filename,"r+");
+        8:  703:	if(NULL == fp)
+        -:  704:	{	
+    #####:  705:		ERROR(ERROR_MAJOR,"Error in opening file\n");
+    #####:  706:		LOGGER(LOG_CRITICAL,"Exiting function: Authenticate for server...\n");
+    #####:  707:		return FAILURE;
+        -:  708:	}
+        -:  709:	
+        -:  710:	while(1)
+        -:  711:	{
+        -:  712:		
+      162:  713:		n = fread(&file_res,sizeof(struct RES_RECORD),1,fp);
+      162:  714:		if(0 > n)
+        -:  715:		{
+    #####:  716:			ERROR(ERROR_MAJOR,"Error in reading from file\n");
+    #####:  717:			LOGGER(LOG_CRITICAL,"Exiting function: update_res_record for server...\n");
+    #####:  718:			pthread_mutex_unlock(&mutex2);
+    #####:  719:			return FAILURE;
+        -:  720:		}
+        -:  721:
+      162:  722:		if(n == 0)// end of file reached
+        -:  723:		{
+        6:  724:			if(ADD == update_option && FAILURE == flag) //no duplicates found, safe to add record
+        -:  725:			{
+        -:  726:				/* Set all the fields to the records file */
+        4:  727:				memset(&file_res.name,0,sizeof(struct RES_RECORD));
+        -:  728:
+        4:  729:				strncpy(file_res.name,(char *)record->name,strlen((char *)record->name)+1);
+        4:  730:				file_res.resource.type = 1;
+        4:  731:				file_res.resource._class = 1;
+        4:  732:				file_res.resource.ttl = 1800;
+        4:  733:				file_res.resource.data_len = strlen((char *)record->rdata);
+        4:  734:				strncpy(file_res.rdata,(char *)record->rdata,strlen((char *)record->rdata)+1);
+        -:  735:				
+        4:  736:				write_ret = fwrite(&file_res,sizeof(struct RES_RECORD),1,fp);
+        4:  737:				if(0 > write_ret)
+        -:  738:				{
+    #####:  739:					ERROR(ERROR_MAJOR,"Error in writing to file\n");
+    #####:  740:					LOGGER(LOG_CRITICAL,"Exiting function: update_res_record for server...\n");
+    #####:  741:					pthread_mutex_unlock(&mutex2);
+    #####:  742:					return FAILURE;
+        -:  743:				}
+        -:  744:			}
+        6:  745:			pthread_mutex_unlock(&mutex2);
+        6:  746:			fclose(fp);
+        6:  747:			return SUCCESS;
+        -:  748:		}
+      156:  749:		else if((0 == strcmp(record->rdata,file_res.rdata)) && (0 != strcasecmp(record->name,file_res.name)))
+        -:  750:		{
+        2:  751:			pthread_mutex_unlock(&mutex2);
+        2:  752:			fclose(fp);
+        2:  753:			LOGGER(LOG_CRITICAL,"Exiting function: update_res_record for server...\n");
+        2:  754:			return FAILURE;
+        -:  755:		}
+      154:  756:		else if((0 == strcasecmp((char *)record->name,file_res.name))&& (0  == strcmp((char *)record->rdata,file_res.rdata)))
+        -:  757:		{
+    #####:  758:			flag = SUCCESS;
+        -:  759:			
+        -:  760:			/* record to be updated only if the option is DELETE */
+    #####:  761:			if(DELETE == update_option)
+        -:  762:			{
+        -:  763:				/* Set all the fields to null to make it invalid */
+        -:  764:
+    #####:  765:				fseek(fp,-(sizeof(struct RES_RECORD)),SEEK_CUR);
+    #####:  766:				strncpy(file_res.name," ",strlen(file_res.name)+1);
+    #####:  767:				file_res.resource.type = 0;
+    #####:  768:				file_res.resource._class = 0;
+    #####:  769:				file_res.resource.ttl = 0;
+    #####:  770:				file_res.resource.data_len = 0;
+    #####:  771:				strncpy(file_res.rdata," ",strlen(file_res.rdata)+1);
+    #####:  772:				write_ret = fwrite(&file_res,sizeof(struct RES_RECORD),1,fp);
+    #####:  773:				if(0 > write_ret)
+        -:  774:				{
+    #####:  775:					ERROR(ERROR_MAJOR,"Error in writing to file\n");
+    #####:  776:					LOGGER(LOG_CRITICAL,"Exiting function: update_res_record for server...\n");
+    #####:  777:					pthread_mutex_unlock(&mutex2);
+    #####:  778:					return FAILURE;
+        -:  779:				}
+        -:  780:				
+    #####:  781:				fclose(fp);	
+    #####:  782:				pthread_mutex_unlock(&mutex2);
+    #####:  783:				return SUCCESS;
+        -:  784:			}
+        -:  785:		}
+      154:  786:	}
+        -:  787:	LOGGER(LOG_CRITICAL, "Exiting function: update_res_record for server...\n");
+        -:  788:
+        -:  789:
+        -:  790:	pthread_mutex_unlock(&mutex2);
+        -:  791:}
+        -:  792:		
+        -:  793:
+        -:  794:		

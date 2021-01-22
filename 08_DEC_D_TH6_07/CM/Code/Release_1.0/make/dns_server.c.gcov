@@ -1,0 +1,210 @@
+        -:    0:Source:../src/dns_server.c
+        -:    0:Graph:dns_server.gcno
+        -:    0:Data:dns_server.gcda
+        -:    0:Runs:2
+        -:    0:Programs:1
+        -:    1:
+        -:    2:/**********************************************************************************************************************************************
+        -:    3:*                       FILE NAME       :  dns_server.c
+        -:    4:*
+        -:    5:*                       DESCRIPTION     :  server handling  multiple client  
+        -:    6:*
+        -:    7:*       DATE            NAME                    REFERENCE       REASON
+        -:    8:*    		                    				 Project
+        -:    9:*
+        -:   10:*       copyright @2015,Aricent Technologies(Holdings) Ltd.,
+        -:   11:**********************************************************************************************************************************************/
+        -:   12:
+        -:   13:/**********************************************************************************************************************************************
+        -:   14:*
+        -:   15:*                                HEADER FILES
+        -:   16:*
+        -:   17:***********************************************************************************************************************************************/
+        -:   18:#include "header_server.h"
+        -:   19:#include "logger.h"
+        -:   20:
+        -:   21:
+        -:   22:/**********************************************************************************************************************************************
+        -:   23:*
+        -:   24:*                                GLOBAL VARIABLES
+        -:   25:*
+        -:   26:**********************************************************************************************************************************************/
+        -:   27:
+        -:   28:int count = 10; //number of clients served concurrently
+        -:   29:
+        -:   30:
+        -:   31:/***********************************************************************************************************************************************
+        -:   32:*
+        -:   33:* 	Function name: main
+        -:   34:*
+        -:   35:* 	Description: creates socket and recieves message from client and  serves client
+        -:   36:*
+        -:   37:*	Return: SUCCESS OR FAILURE
+        -:   38:*
+        -:   39:***********************************************************************************************************************************************/
+        -:   40:
+        -:   41:
+        2:   42:int main(
+        -:   43:	 int C, 	/* argument count*/ 
+        -:   44:	 char *V[] 	/* comman line arguments*/
+        -:   45:	 )
+        -:   46:{
+        2:   47:	LOGGER(LOG_CRITICAL,"Start of function:main, for server\n");
+        -:   48:	
+        2:   49:	int	sd	= 0,
+        2:   50:		recvd	= 0,
+        2:   51:		th_ret	= 0;
+        -:   52:
+        -:   53:	char	buf[MAX];
+        -:   54:
+        -:   55:	struct sockaddr_storage client_addr;
+        -:   56:	struct sockaddr_in server_addr;
+        -:   57:
+        2:   58:	socklen_t structlength = 0;
+        -:   59:		
+        2:   60:	Thread_client *client = NULL;
+        -:   61:
+        -:   62:	pthread_t thread;
+        -:   63:
+        -:   64:
+        -:   65:	/* Create socket */
+        2:   66:	if ((sd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) 
+        -:   67:	{
+    #####:   68:		ERROR(ERROR_CRITICAL, "Socket could not be created...\n");
+    #####:   69:		LOGGER(LOG_CRITICAL,"Exiting function: main, for server\n");
+    #####:   70:		exit(FAILURE);
+        -:   71:	}
+        -:   72:	/* Prepare the sockaddr_in structure */
+        -:   73:
+        2:   74:	memset(&server_addr, 0, sizeof(server_addr));
+        2:   75:	server_addr.sin_family = AF_INET;
+        2:   76:	server_addr.sin_addr.s_addr = INADDR_ANY;
+        2:   77:	server_addr.sin_port = htons(PORT1);
+        -:   78:
+        -:   79:	/* bind the socket to the port number */
+        2:   80:	if (bind(sd, (struct sockaddr *) &server_addr, sizeof(server_addr)) == -1) 
+        -:   81:	{
+    #####:   82:		ERROR(ERROR_CRITICAL, "Error in binding...\n");
+    #####:   83:		close(sd);
+    #####:   84:		LOGGER(LOG_CRITICAL, "Exiting funtion: main, for server\n");
+        -:   85:
+    #####:   86:		exit(FAILURE);
+        -:   87:	}
+        -:   88:
+        2:   89:	structlength = sizeof(struct sockaddr_storage);
+        -:   90:	
+        -:   91:	/* Serving concurrently 10 clients */
+        -:   92:
+       19:   93:	while(0 < count)
+        -:   94:	{
+       17:   95:		signal( SIGINT, my_handler );
+        -:   96:
+       17:   97:		printf("In server now..  \n ");	
+       17:   98:		printf("To exit from Server Press CTRL+C \n ");
+        -:   99:		
+       17:  100:		LOGGER(LOG_MINOR,"Server wait for client\n");
+        -:  101:		
+        -:  102:		/* Recieve message from client */
+        -:  103:		
+       17:  104:		recvd = recvfrom(sd, (char *)buf, sizeof(buf), 0,(struct sockaddr *) &client_addr, &structlength);	
+       15:  105:		if(0 > recvd)
+        -:  106:		{	
+    #####:  107:			ERROR(ERROR_CRITICAL, "Error in recieving message from client...\n");
+    #####:  108:			close(sd);
+    #####:  109:			LOGGER(LOG_CRITICAL, "Exiting funtion: main, for server\n");
+    #####:  110:			exit(FAILURE);
+        -:  111:		}
+        -:  112:		
+       15:  113:		if (0 == strcmp(buf,"login"))
+        -:  114:		{
+       10:  115:			if (SUCCESS == Authenticate(sd,&client_addr))
+        -:  116:			{
+        -:  117:				TRACE(DETAILED_TRACE,("login successful\n"));
+        8:  118:				memset(buf,0,MAX);
+        8:  119:				recvd = recvfrom(sd, (char *)buf, sizeof(buf), 0,(struct sockaddr *)&client_addr, &structlength);
+        8:  120:				if(0 > recvd)
+        -:  121:				{	
+    #####:  122:					ERROR(ERROR_CRITICAL, "Error in recieving message from client...\n");
+    #####:  123:					close(sd);
+    #####:  124:					LOGGER(LOG_CRITICAL, "Exiting funtion: main, for server\n");
+    #####:  125:					exit(FAILURE);
+        -:  126:				}
+        -:  127:				
+        -:  128:
+        -:  129:				/* Create structure Thread_client */
+        -:  130:
+        8:  131:				client = (Thread_client *)calloc(1 ,sizeof(Thread_client));
+        8:  132:				if(NULL == client)
+        -:  133:				{
+    #####:  134:					ERROR(ERROR_CRITICAL, "Memory Allocation failure...\n");
+    #####:  135:					close(sd);
+    #####:  136:					LOGGER(LOG_CRITICAL, "Exiting function: main, for server\n");
+    #####:  137:					exit(FAILURE);
+        -:  138:				}
+        -:  139:				
+        -:  140:				/* Assigning Thread_client structure */
+        -:  141:
+        8:  142:				client->sd = sd;
+        8:  143:				client->cliaddr = (struct sockaddr_storage)client_addr;
+        8:  144:				memcpy((char *)client->buffer,(char *)buf,sizeof(buf));
+        -:  145:					
+        -:  146:				/* create new thread to serve client */
+        -:  147:
+        8:  148:				th_ret = pthread_create(&thread,NULL,(void *)Update_Record,(void *)client);
+        8:  149:				if(0 > th_ret)
+        -:  150:				{
+    #####:  151:					ERROR(ERROR_CRITICAL, "Could not create thread...\n");
+    #####:  152:					close(sd);
+    #####:  153:					LOGGER(LOG_CRITICAL, "Exiting function: main, for server\n");
+    #####:  154:					exit(FAILURE);
+        -:  155:
+        -:  156:				}	
+        -:  157:			}
+        -:  158:		}
+        -:  159:		else
+        -:  160:		{
+        -:  161:			/* Create structure Thread_client */
+        -:  162:
+        5:  163:			client = (Thread_client *)calloc(1 ,sizeof(Thread_client));
+        5:  164:			if(NULL == client)
+        -:  165:			{
+    #####:  166:				ERROR(ERROR_CRITICAL, "Memory Allocation failure...\n");
+    #####:  167:				close(sd);
+    #####:  168:				LOGGER(LOG_CRITICAL, "Exiting function: main, for server\n");
+    #####:  169:				exit(FAILURE);
+        -:  170:			}
+        -:  171:			
+        -:  172:			/* Assigning Thread_client structure */
+        -:  173:
+        5:  174:			client->sd = sd;
+        5:  175:			client->cliaddr = (struct sockaddr_storage)client_addr;
+        5:  176:			memcpy((char *)client->buffer,(char *)buf,sizeof(buf));
+        -:  177:			
+        -:  178:			
+        -:  179:			/* create new thread to serve client */
+        -:  180:
+        5:  181:			th_ret = pthread_create(&thread,NULL,(void *)serve_client,(void *)client);
+        5:  182:			if(0 > th_ret)
+        -:  183:			{
+    #####:  184:				ERROR(ERROR_CRITICAL, "Could not create thread...\n");
+    #####:  185:				close(sd);
+    #####:  186:				LOGGER(LOG_CRITICAL, "Exiting function: main, for server\n");
+    #####:  187:				exit(FAILURE);
+        -:  188:			}
+        -:  189:		}
+        -:  190:	}//end of while
+        -:  191:
+    #####:  192:	LOGGER(LOG_CRITICAL,"Exiting funtion: main.for server\n");
+    #####:  193:	pthread_exit(NULL);	
+        -:  194:	//return 0;
+        -:  195:} // main
+        -:  196:
+        -:  197:/*******************************END OF MAIN***********************************/
+        -:  198:
+        -:  199:
+        -:  200:
+        -:  201:
+        -:  202:
+        -:  203:
+        -:  204:
+        -:  205:

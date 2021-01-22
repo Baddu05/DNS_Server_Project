@@ -1,0 +1,45 @@
+
+Feb 22 04:11:19.713|4886|-->  Error in binding...
+
+
+Feb 23 18:02:07.819|8434|-->  Error in binding...
+
+
+Feb 23 20:18:47.681|21540|-->  Error in binding...
+
+
+Feb 23 21:53:35.837.740|26562|-->  socket creation failed
+
+
+Feb 24 13:52:24.072|32345|-->  Error in binding...
+
+
+Feb 24 13:52:39.018|32355|-->  Error in binding...
+
+
+Feb 24 13:57:53.888|32675|-->  socket creation failed
+
+
+Feb 24 13:59:38.200|32743|-->  socket creation failed
+
+
+Feb 24 14:03:46.343|478|-->  Error in sending login information to server...
+
+
+Feb 24 14:16:35.105|2074|-->  socket creation failed
+
+
+Feb 24 14:19:14.598|2364|-->  socket creation failed
+
+
+Feb 24 14:25:50.282|1540|-->  Error in recieveing message
+
+
+Feb 24 14:37:47.128|3923|-->  Error in binding...
+
+
+Feb 24 14:39:55.023|4014|-->  Error in binding...
+
+
+Feb 24 20:12:47.286|32710|-->  socket creation failed
+

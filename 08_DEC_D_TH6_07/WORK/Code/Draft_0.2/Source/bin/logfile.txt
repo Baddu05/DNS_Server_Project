@@ -1,0 +1,253 @@
+
+Feb 24 20:06:58.458|32489-->  Entering function:UPDATE
+
+
+Feb 24 20:06:58.464|32489-->  Entering function:CREATE_UPDATE_MESSAGE
+
+
+Feb 24 20:06:58.467|32489-->  Exiting function:CREATE_UPDATE_MESSAGE
+
+
+Feb 24 20:06:58.469|32071-->  Server wait for client
+
+
+Feb 24 20:06:58.469|32071-->  Entering function: Update_Record for server...
+
+
+Feb 24 20:06:58.476|32071-->  Entering function: update_res_record for server...
+
+
+Feb 24 20:06:58.481|32489-->  UPDATE SUCCESSFULL
+
+
+Feb 24 20:06:58.481|32071-->  Entering function: Update_Record for server...
+
+
+Feb 24 20:06:58.484|32489-->  exiting function:UPDATE_LOCAL_CACHE
+
+
+Feb 24 20:06:58.491|32489-->  Exiting function:UPDATE_LOCAL_CACHE
+
+
+Feb 24 20:06:58.494|32489-->  Exiting function:UPDATE
+
+
+Feb 24 20:06:58.496|32489-->  Exiting function:main
+
+
+Feb 24 20:07:22.142|32502-->  Entering function:main
+
+
+Feb 24 20:07:22.145|32502-->  Start of function: Login_server
+
+
+Feb 24 20:07:27.451|32071-->  Entering function: Authenticate for server
+
+
+Feb 24 20:07:27.455|32071-->  Exiting function: Authenticate for server...
+
+
+Feb 24 20:07:27.455|32502-->  End of function: Login_server
+
+
+Feb 24 20:07:27.463|32502-->  Start of function: validate_ip
+
+
+Feb 24 20:07:27.466|32502-->  End of function: validate_ip
+
+
+Feb 24 20:07:27.468|32502-->  Entering function:UPDATE
+
+
+Feb 24 20:07:27.471|32502-->  Entering function:CREATE_UPDATE_MESSAGE
+
+
+Feb 24 20:07:27.474|32502-->  Exiting function:CREATE_UPDATE_MESSAGE
+
+
+Feb 24 20:07:27.477|32071-->  Server wait for client
+
+
+Feb 24 20:07:27.477|32071-->  Entering function: Update_Record for server...
+
+
+Feb 24 20:07:27.481|32071-->  Entering function: update_res_record for server...
+
+
+Feb 24 20:07:27.484|32502-->  UPDATE SUCCESSFULL
+
+
+Feb 24 20:07:27.484|32071-->  Entering function: Update_Record for server...
+
+
+Feb 24 20:07:27.487|32502-->  exiting function:UPDATE_LOCAL_CACHE
+
+
+Feb 24 20:07:27.493|32502-->  Exiting function:UPDATE_LOCAL_CACHE
+
+
+Feb 24 20:07:27.496|32502-->  Exiting function:UPDATE
+
+
+Feb 24 20:07:27.500|32502-->  Exiting function:main
+
+
+Feb 24 20:08:26.425|32514-->  Entering function:main
+
+
+Feb 24 20:08:26.428|32514-->  Start of function: Login_server
+
+
+Feb 24 20:08:31.608|32071-->  Entering function: Authenticate for server
+
+
+Feb 24 20:08:31.612|32071-->  Exiting function: Authenticate for server...
+
+
+Feb 24 20:08:31.612|32514-->  End of function: Login_server
+
+
+Feb 24 20:08:31.621|32514-->  Start of function: validate_ip
+
+
+Feb 24 20:08:31.624|32514-->  invalid IP address
+exiting validate_ip function
+
+
+Feb 24 20:12:10.688|32710-->  Entering function:main
+
+
+Feb 24 20:13:01.685|32710-->  Exiting function:main
+
+
+Feb 24 20:14:04.646|311-->  Entering function:main
+
+
+Feb 24 20:14:24.885|393-->  Entering function:main
+
+
+Feb 24 20:14:58.829|393-->  Entering function:REMOVE_PREFIX
+
+
+Feb 24 20:15:45.050|393-->  Exiting function:REMOVE_PREFIX
+
+
+Feb 24 20:15:53.865|393-->  Entering function:DNS_QUERY
+
+
+Feb 24 20:16:12.663|393-->  entering SEARCH_LOCAL_CACHE function
+
+
+Feb 24 20:16:47.797|393-->  exiting SEARCH_LOCAL_CACHE function
+
+
+Feb 24 20:17:04.180|393-->  Start of function: create_message
+
+
+Feb 24 20:17:31.010|393-->  entering function: HOST TO DNS
+
+
+Feb 24 20:18:02.128|393-->  exiting HOST TO DNS function
+
+
+Feb 24 20:18:41.725|393-->  End of function: create_message
+
+
+Feb 24 20:18:53.862|32071-->  Server wait for client
+
+
+Feb 24 20:18:53.862|32071-->  Entering function: Update_Record for server...
+
+
+Feb 24 20:18:53.868|32071-->  Entering function: update_res_record for server...
+
+
+Feb 24 20:18:53.871|32071-->  Exiting function: update_res_record for server...
+
+
+Feb 24 20:18:53.873|32071-->  Entering function: Update_Record for server...
+
+
+Feb 24 20:19:08.427|393-->  Start of function: save_and_display
+
+
+Feb 24 20:19:47.208|393-->  End of function: save_and_display
+
+
+Feb 24 20:20:05.719|393-->  Exiting function:DNS_QUERY
+
+
+Feb 24 20:20:21.446|393-->  Exiting function:main
+
+
+Feb 24 20:21:52.919|835-->  Entering function:main
+
+
+Feb 24 20:22:22.030|835-->  Start of function: validate_ip
+
+
+Feb 24 20:24:50.882|954-->  Entering function:main
+
+
+Feb 24 20:25:41.217|954-->  Start of function: Login_server
+
+
+Feb 24 20:26:09.641|32071-->  Entering function: Authenticate for server
+
+
+Feb 24 20:26:13.040|32071-->  Exiting function: Authenticate for server...
+
+
+Feb 24 20:26:19.470|954-->  End of function: Login_server
+
+
+Feb 24 20:27:02.506|954-->  Start of function: validate_ip
+
+
+Feb 24 20:28:44.681|1151-->  Entering function:main
+
+
+Feb 24 20:29:30.912|1151-->  Start of function: Login_server
+
+
+Feb 24 20:30:11.786|32071-->  Server wait for client
+
+
+Feb 24 20:30:11.786|32071-->  Entering function: Update_Record for server...
+
+
+Feb 24 20:30:11.792|32071-->  Entering function: update_res_record for server...
+
+
+Feb 24 20:30:11.795|32071-->  Exiting function: update_res_record for server...
+
+
+Feb 24 20:30:11.798|32071-->  Entering function: Update_Record for server...
+
+
+Feb 24 20:30:15.341|32071-->  Entering funtion: serve_client for server...
+
+
+Feb 24 20:30:15.341|32071-->  Server wait for client
+
+
+Feb 24 20:30:15.345|32071-->  Entered function: Search_Record for server....
+
+
+Feb 24 20:30:15.349|32071-->  Reading from file...
+
+
+Feb 24 20:30:15.352|32071-->  Finished reading file...
+
+
+Feb 24 20:30:15.355|32071-->  Exiting function: Search_Record for server...
+
+
+Feb 24 20:30:15.357|32071-->  Exiting function: server_client for server...
+
+
+Feb 24 20:30:20.572|1151-->  End of function: Login_server
+
+
+Feb 24 20:30:34.235|1151-->  Start of function: validate_ip
+

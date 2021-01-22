@@ -1,0 +1,72 @@
+              ##################################################
+              #  __________________________________________    #
+              # /\                                         \   #
+              # \_| Make file for dns lookup utility	   |   #
+              #   |                                        |   #
+              #   |   _____________________________________|_  #
+              #    \_/_______________________________________/ #
+              ##################################################
+
+CC= gcc
+CFLAGS = -c -Wall -g
+OBJ= ../obj/
+BIN= ../bin/
+SRC= ../stubs/
+SRC1 = ../src/
+INC= ../include/
+TRACE= -DTRACE_FEATURE
+
+
+output: $(BIN)dns_query $(BIN)dns_inverse_query $(BIN)dns_update $(BIN)dns_login
+
+$(BIN)dns_query: $(OBJ)dns_query.o $(OBJ)dns_client_funcs.o $(OBJ)logger.o
+	$(CC) -o dns_query $(OBJ)dns_query.o $(OBJ)dns_client_funcs.o $(OBJ)logger.o
+	mv dns_query $(BIN)
+
+$(BIN)dns_inverse_query: $(OBJ)dns_inverse_query.o $(OBJ)dns_client_funcs.o $(OBJ)logger.o
+	$(CC) -o dns_inverse_query $(OBJ)dns_inverse_query.o $(OBJ)dns_client_funcs.o $(OBJ)logger.o
+	mv dns_inverse_query $(BIN)
+
+$(BIN)dns_update: $(OBJ)dns_update.o $(OBJ)dns_client_funcs.o $(OBJ)logger.o
+	$(CC) -o dns_update $(OBJ)dns_update.o $(OBJ)dns_client_funcs.o $(OBJ)logger.o
+	mv dns_update $(BIN)
+
+$(BIN)dns_login: $(OBJ)dns_login.o $(OBJ)dns_client_funcs.o $(OBJ)logger.o
+	$(CC) -o dns_login $(OBJ)dns_login.o $(OBJ)dns_client_funcs.o $(OBJ)logger.o
+	mv dns_login $(BIN)
+
+
+$(OBJ)dns_query.o: $(SRC)dns_query.c $(INC)header.h $(INC)logger.h
+	$(CC) $(CFLAGS) $(SRC)dns_query.c -I$(INC)
+	mv dns_query.o $(OBJ)
+
+$(OBJ)dns_inverse_query.o: $(SRC)dns_inverse_query.c $(INC)header.h $(INC)logger.h
+	$(CC) $(CFLAGS) $(SRC)dns_inverse_query.c -I$(INC)
+	mv dns_inverse_query.o $(OBJ)
+
+$(OBJ)dns_update.o: $(SRC)dns_update.c $(INC)header.h $(INC)logger.h
+	$(CC) $(CFLAGS) $(SRC)dns_update.c -I$(INC)
+	mv dns_update.o $(OBJ)
+
+$(OBJ)dns_client_funcs.o: $(SRC1)dns_client_funcs.c $(INC)header.h $(INC)logger.h
+	$(CC) $(CFLAGS) $(SRC1)dns_client_funcs.c -I$(INC)
+	mv dns_client_funcs.o $(OBJ)
+
+$(OBJ)dns_login.o: $(SRC)dns_login.c $(INC)header.h $(INC)logger.h
+	$(CC) $(CFLAGS) $(SRC)dns_login.c -I$(INC)
+	mv dns_login.o $(OBJ)
+
+
+$(OBJ)logger.o: $(SRC1)logger.c $(INC)logger.h
+	$(CC) $(CFLAGS)  $(SRC1)logger.c -I$(INC)
+	mv logger.o $(OBJ)
+
+
+clean:
+	rm $(BIN)dns_query
+	rm $(BIN)dns_inverse_query
+	rm $(BIN)dns_update
+	rm $(BIN)dns_logger
+	rm $(OBJ)*.o
+
+

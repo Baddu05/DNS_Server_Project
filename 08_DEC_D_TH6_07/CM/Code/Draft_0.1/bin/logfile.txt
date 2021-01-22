@@ -1,0 +1,75 @@
+
+Feb 22 15:00:31.647|20343-->  Exiting function:REMOVE_PREFIX
+
+
+Feb 22 15:00:31.653|20343-->  Entering function:DNS_QUERY
+
+
+Feb 22 15:00:31.655|20343-->  entering SEARCH_LOCAL_CACHE function
+
+
+Feb 22 15:00:31.659|20343-->  exiting SEARCH_LOCAL_CACHE function
+
+
+Feb 22 15:00:31.661|20343-->  Exiting function:DNS_QUERY
+
+
+Feb 22 15:00:31.668|20343-->  Exiting function:main
+
+
+Feb 22 15:06:11.356|20539-->  Start of function:main, for server
+
+
+Feb 22 15:06:11.360|20539-->  Server wait for client
+
+
+Feb 22 15:06:34.556|20545-->  Entering function:main
+
+
+Feb 22 15:06:50.862|20547-->  Entering function:main
+
+
+Feb 22 15:06:50.865|20547-->  Entering function:REMOVE_PREFIX
+
+
+Feb 22 15:06:50.867|20547-->  Exiting function:REMOVE_PREFIX
+
+
+Feb 22 15:06:50.870|20547-->  Entering function:DNS_QUERY
+
+
+Feb 22 15:06:50.872|20547-->  entering SEARCH_LOCAL_CACHE function
+
+
+Feb 22 15:06:50.875|20547-->  exiting SEARCH_LOCAL_CACHE function
+
+
+Feb 22 15:06:50.877|20547-->  Exiting function:DNS_QUERY
+
+
+Feb 22 15:06:50.880|20547-->  Exiting function:main
+
+
+Feb 22 15:07:27.252|20553-->  Entering function:main
+
+
+Feb 22 15:07:27.254|20553-->  Entering function:REMOVE_PREFIX
+
+
+Feb 22 15:07:27.257|20553-->  Exiting function:REMOVE_PREFIX
+
+
+Feb 22 15:07:27.259|20553-->  Entering function:DNS_QUERY
+
+
+Feb 22 15:07:27.261|20553-->  entering SEARCH_LOCAL_CACHE function
+
+
+Feb 22 15:07:27.264|20553-->  exiting SEARCH_LOCAL_CACHE function
+
+
+Feb 22 15:07:27.267|20553-->  Exiting function:DNS_QUERY
+
+
+Feb 22 15:07:27.270|20553-->  Exiting function:main
+

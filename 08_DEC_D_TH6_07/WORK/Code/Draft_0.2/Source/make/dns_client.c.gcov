@@ -1,0 +1,187 @@
+        -:    0:Source:../src/dns_client.c
+        -:    0:Graph:dns_client.gcno
+        -:    0:Data:dns_client.gcda
+        -:    0:Runs:22
+        -:    0:Programs:1
+        -:    1:/**********************************************************************************************************************************************
+        -:    2:*
+        -:    3:* 	File name 	: dnsclient.c
+        -:    4:* 
+        -:    5:*  	Description	: file contains main function that connect to name server,it also receives requests from users for query,
+        -:    6:*               		inverse query,update functionalities
+        -:    7:*
+        -:    8:***********************************************************************************************************************************************/
+        -:    9:
+        -:   10:/************************************************************************************************************************************************      
+        -:   11:				 INCLUDING HEADER FILES 
+        -:   12:***********************************************************************************************************************************************/
+        -:   13: 
+        -:   14:#include	"logger.h"
+        -:   15:#include	"header.h"
+        -:   16:#include	"message.h"
+        -:   17:#include 	"authenticate.h"
+        -:   18:#include	"resource.h"
+        -:   19:
+        -:   20:int g_trace_level = DETAILED_TRACE;
+        -:   21:
+        -:   22:
+        -:   23:/***********************************************************************************************************************************************
+        -:   24:*
+        -:   25:* 	Function name	: main
+        -:   26:*
+        -:   27:* 	Description	: connect to name server,it also receives requests from users for query,inverse query,update functionalities
+        -:   28:*
+        -:   29:* 	Return		: SUCCESS or FAILURE
+        -:   30:*
+        -:   31:***********************************************************************************************************************************************/
+        -:   32:
+        -:   33:
+       22:   34:int main(
+        -:   35:	int C, /* arguments count */
+        -:   36:	char * V[] /* command line arguments as inputs*/
+        -:   37:	)
+        -:   38:
+        -:   39:{	
+        -:   40:	
+       22:   41:	LOGGER(LOG_CRITICAL,"Entering function:main\n");
+        -:   42:
+       22:   43:	int	sd		= 0,	 // socket_descriptor
+       22:   44:		is_valid	= 0,					
+       22:   45:		status		= 0;
+        -:   46:
+       22:   47:	char *domain_name = NULL;
+        -:   48:				
+        -:   49:	struct sockaddr_in nameserver;
+        -:   50:
+        -:   51:	/*Error checking for command line arguments*/
+        -:   52:	
+       22:   53:	if(C < 3) /*error handling of command line arguments */
+        -:   54:	{
+        2:   55:		Display_Help()					// Help Instructions
+        2:   56:		return FAILURE;	
+        -:   57:	}
+        -:   58:
+        -:   59:
+        -:   60:	
+        -:   61:	/* SOCKET CREATION */
+        -:   62:	
+       20:   63:	sd = socket(AF_INET,SOCK_DGRAM,0);
+        -:   64:
+        -:   65:	/*Error checking for socket creation*/
+       20:   66:	if(0 > sd)
+        -:   67:	{
+        1:   68:		ERROR(ERROR_MAJOR,"socket creation failed\n");
+        1:   69:		LOGGER(LOG_CRITICAL,"Exiting function:main\n");
+        1:   70:		return FAILURE;
+        -:   71:	}
+        -:   72:
+        -:   73:
+        -:   74:	/* CONFIGURTION OF ADDRESS FIELDS */
+        -:   75:	
+       19:   76:	nameserver.sin_family = AF_INET;
+       19:   77:	nameserver.sin_port = htons(PORT);
+       19:   78:	nameserver.sin_addr.s_addr = inet_addr(SERVER);
+        -:   79:
+        -:   80:	TRACE(BRIEF_TRACE,("socket created\n"));
+        -:   81:
+        -:   82:	/*READ OPTIONS FROM COMMAND LINE */
+        -:   83:
+       19:   84:	if(0 == strcmp(V[1],"-DI"))
+        -:   85:	{
+        3:   86:		if(isdigit(V[2][0]))
+        -:   87:		{
+    #####:   88:			printf("Invalid domain name\n");
+        -:   89:		}
+        -:   90:		else
+        -:   91:		{
+        3:   92:			domain_name = remove_prefix(V[2]);
+        -:   93:			TRACE(DETAILED_TRACE, ("prefix removed %s\n",domain_name));
+        3:   94:			Dns_Query(sd,&nameserver,domain_name,IP);
+        3:   95:			free(domain_name);
+        -:   96:		}
+        -:   97:	}
+        -:   98:	
+       16:   99:	else if(0 == strcmp(V[1], "-ID"))
+        -:  100:	{
+        5:  101:		is_valid = validate_ip(V[2]);			/*calling function to validate input IP*/
+        4:  102:		if(SUCCESS == is_valid)
+        -:  103:		{
+        4:  104:			Dns_Query(sd,&nameserver,V[2],DOMAIN);
+        -:  105:		}
+        -:  106:		else
+        -:  107:		{
+    #####:  108:			printf("invalid ip address entered\n");
+    #####:  109:			ERROR(ERROR_MINOR,"invalid ip\n");
+    #####:  110:			LOGGER(LOG_CRITICAL,"Exiting function:main\n");
+    #####:  111:			return FAILURE;
+        -:  112:		}
+        -:  113:	}
+       11:  114:	else if(0 == strcmp(V[1], "-U"))
+        -:  115:	{
+        7:  116:		if(NULL == V[3]) 
+        -:  117:		{
+    #####:  118:			Display_Help()						/*Help Instructions*/
+    #####:  119:			LOGGER(LOG_CRITICAL,"Exiting function:main\n");
+    #####:  120:			return FAILURE;
+        -:  121:		}/*end if*/
+        -:  122:
+        7:  123:		status = Login_server(sd,&nameserver);
+        7:  124:		if(status == SUCCESS)
+        -:  125:		{
+        -:  126:			
+        5:  127:			is_valid = validate_ip(V[3]);				/*calling function to validate input IP*/
+        4:  128:			if(SUCCESS == is_valid)
+        -:  129:			{
+        4:  130:				Update(sd,&nameserver,ADD,V[2],V[3]);
+        -:  131:			}
+        -:  132:			else
+        -:  133:			{
+    #####:  134:				ERROR(ERROR_MINOR,"invalid ip\n");
+    #####:  135:				return FAILURE;
+        -:  136:			}
+        -:  137:		}
+        -:  138:		else
+        -:  139:		{
+        2:  140:			printf("login unsuccessfull\n");
+        2:  141:			LOGGER(LOG_CRITICAL,"Exiting function:main\n");
+        2:  142:			return FAILURE;
+        -:  143:		}/*end if*/
+        -:  144:	}
+        4:  145:	else if(0 == strcmp(V[1],"-D"))
+        -:  146:	{	
+        4:  147:		if(NULL == V[3])
+        -:  148:		{
+    #####:  149:			Display_Help()/*calling macro to display help*/
+    #####:  150:			LOGGER(LOG_CRITICAL,"Exiting function:main\n");
+    #####:  151:			return FAILURE;
+        -:  152:		}
+        4:  153:		status = Login_server(sd,&nameserver);
+        4:  154:		if(status == SUCCESS)
+        -:  155:		{
+        -:  156:			
+        4:  157:			is_valid = validate_ip(V[3]);/*calling function to validate input IP*/
+        3:  158:			if(SUCCESS == is_valid)
+        -:  159:			{
+        2:  160:				Update(sd,&nameserver,DELETE,V[2],V[3]);
+        -:  161:			}
+        -:  162:			else/*if IP is Invalid*/
+        -:  163:			{
+        1:  164:				ERROR(ERROR_MINOR,"invalid IP\n");
+        1:  165:				return FAILURE;
+        -:  166:			}
+        -:  167:		}
+        -:  168:		else/*on unsuccessful login*/
+        -:  169:		{
+    #####:  170:			printf("login unsuccessfull\n");
+    #####:  171:			LOGGER(LOG_CRITICAL,"Exiting function:main\n");
+    #####:  172:			return FAILURE;
+        -:  173:		}
+        -:  174:	}
+        -:  175:	else
+        -:  176:	{
+    #####:  177:		Display_Help()							/*Help Instructions*/
+        -:  178:	}
+       13:  179:	LOGGER(LOG_CRITICAL,"Exiting function:main\n");
+       13:  180:	return SUCCESS;
+        -:  181:}
+        -:  182:
